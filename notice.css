@@ -21,6 +21,25 @@ body.notice-page { background: var(--paper); }
 .page-head .sub { font-size: 13px; letter-spacing: 2px; color: #7a7060; }
 .page-head .rule { color: var(--gold); font-size: 12px; letter-spacing: 2px; margin-top: 16px; }
 
+/* 语言切换 */
+.lang-switch {
+  display: flex; justify-content: center; gap: 0;
+  margin-top: 18px;
+}
+.lang-switch a {
+  padding: 6px 18px;
+  font-size: 12px; letter-spacing: 1.5px;
+  text-decoration: none;
+  color: #8a8070;
+  background: #fff;
+  border: 1px solid #e2d8c4;
+}
+.lang-switch a:first-child { border-radius: 999px 0 0 999px; }
+.lang-switch a:last-child { border-radius: 0 999px 999px 0; border-left: none; }
+.lang-switch a.on {
+  color: #fff; background: var(--accent); border-color: transparent;
+}
+
 /* 目录 chips */
 .toc {
   display: flex; gap: 8px; overflow-x: auto;

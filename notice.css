@@ -1,0 +1,200 @@
+/* 宾客须知副页 —— 复用 style.css 的配色与字体 */
+body.notice-page { background: var(--paper); }
+
+.wrap { max-width: 520px; margin: 0 auto; padding: 0 18px 72px; }
+
+/* 顶部 */
+.page-head {
+  text-align: center;
+  padding: 34px 0 22px;
+}
+.page-head .kicker {
+  font-size: 11px; letter-spacing: 6px; text-transform: uppercase; color: var(--gold);
+}
+.page-head h1 {
+  font-family: "Snell Roundhand", "Brush Script MT", "STKaiti", cursive;
+  font-weight: 400;
+  font-size: clamp(34px, 10vw, 44px);
+  color: var(--accent);
+  margin: 10px 0 6px;
+}
+.page-head .sub { font-size: 13px; letter-spacing: 2px; color: #7a7060; }
+.page-head .rule { color: var(--gold); font-size: 12px; letter-spacing: 2px; margin-top: 16px; }
+
+/* 目录 chips */
+.toc {
+  display: flex; gap: 8px; overflow-x: auto;
+  padding: 4px 0 14px;
+  position: sticky; top: 0; z-index: 20;
+  background: linear-gradient(var(--paper) 72%, transparent);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.toc::-webkit-scrollbar { display: none; }
+.toc a {
+  flex: 0 0 auto;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  letter-spacing: .5px;
+  color: #6d6353;
+  background: #fff;
+  border: 1px solid #e2d8c4;
+  border-radius: 999px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.toc a:active { background: var(--accent); color: #fff; border-color: transparent; }
+
+/* 卡片 */
+.card {
+  background: #fff;
+  border: 1px solid #e8dfcc;
+  border-radius: 16px;
+  padding: 20px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 6px 18px rgba(120, 100, 70, .06);
+}
+.card > h2 {
+  font-size: 16.5px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: .5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.card > h2 .em { font-size: 18px; }
+.card > h2 .en {
+  font-size: 10.5px; font-weight: 400; letter-spacing: 1.5px;
+  color: #b0a48d; text-transform: uppercase; margin-left: auto;
+}
+.card .lede { font-size: 13px; color: #8a8070; line-height: 1.7; margin: 8px 0 14px; }
+
+.block { margin-top: 16px; }
+.block h3 {
+  font-size: 13.5px; font-weight: 600; color: var(--accent);
+  letter-spacing: .5px; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.block h3 .tag {
+  font-size: 10px; font-weight: 500; letter-spacing: .5px;
+  color: #fff; background: var(--gold);
+  padding: 2px 7px; border-radius: 999px;
+}
+.block h3 .tag.free { background: #4e9e6a; }
+.block p, .block li { font-size: 13.5px; line-height: 1.8; color: #5c5346; }
+.block ul { list-style: none; }
+.block li { position: relative; padding-left: 15px; margin-bottom: 3px; }
+.block li::before {
+  content: ""; position: absolute; left: 2px; top: 10px;
+  width: 5px; height: 5px; border-radius: 50%; background: #d9c8a4;
+}
+.block li b, .block p b { color: var(--ink); }
+
+/* 表格 */
+.table-scroll { overflow-x: auto; margin-top: 10px; -webkit-overflow-scrolling: touch; }
+table { border-collapse: collapse; width: 100%; min-width: 460px; font-size: 12.5px; }
+th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #f0e9da; white-space: nowrap; }
+th {
+  font-weight: 600; color: #8a7f6c; font-size: 11.5px;
+  letter-spacing: .5px; background: #faf6ec;
+}
+td:first-child { color: var(--ink); font-weight: 500; }
+td { color: #5c5346; }
+tr:last-child td { border-bottom: none; }
+.hint-scroll { font-size: 11px; color: #b0a48d; margin-top: 6px; }
+
+/* 信息条 */
+.note {
+  display: flex; gap: 9px;
+  background: #fdf8ec;
+  border-left: 3px solid var(--gold);
+  border-radius: 8px;
+  padding: 11px 13px;
+  margin-top: 12px;
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: #6d6353;
+}
+.note.warn { background: #fdf1ef; border-left-color: var(--accent); }
+.note .ico { flex: 0 0 auto; font-size: 14px; line-height: 1.6; }
+
+/* 地址块 */
+.addr {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: #faf6ec; border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 4px;
+}
+.addr .pin { font-size: 16px; line-height: 1.5; }
+.addr .txt { font-size: 13px; line-height: 1.7; color: #5c5346; }
+.addr .txt b { color: var(--ink); display: block; font-size: 14px; margin-bottom: 2px; }
+
+/* 按钮组 */
+.btn-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 12px; }
+.btn-row a {
+  flex: 1 1 46%;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px 8px;
+  font-size: 13px; letter-spacing: .5px;
+  text-decoration: none;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid #ddd2bd;
+  border-radius: 11px;
+}
+.btn-row a.solid {
+  color: #fff; background: var(--accent); border-color: transparent;
+  box-shadow: 0 6px 16px rgba(166, 58, 50, .22);
+}
+.btn-row a:active { transform: scale(.98); }
+
+/* 折叠 */
+details {
+  border-top: 1px solid #f0e9da;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+details summary {
+  font-size: 13.5px; font-weight: 600; color: var(--accent);
+  cursor: pointer; list-style: none;
+  display: flex; align-items: center; gap: 6px;
+}
+details summary::-webkit-details-marker { display: none; }
+details summary::after {
+  content: "▾"; margin-left: auto; font-size: 12px; color: #c0b49c;
+  transition: transform .2s ease;
+}
+details[open] summary::after { transform: rotate(180deg); }
+details .body { padding-top: 10px; }
+details .body p, details .body li { font-size: 13.5px; line-height: 1.8; color: #5c5346; }
+details .body ol { padding-left: 18px; }
+details .body ol li { margin-bottom: 4px; }
+
+/* 时间轴（当天流程） */
+.steps { margin-top: 6px; }
+.step {
+  display: flex; gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px dashed #efe7d7;
+}
+.step:last-child { border-bottom: none; }
+.step .t {
+  flex: 0 0 54px;
+  font-size: 13px; font-weight: 600; color: var(--accent);
+  letter-spacing: .5px;
+}
+.step .d { font-size: 13.5px; color: #5c5346; line-height: 1.65; }
+
+/* 页脚 */
+.page-foot { text-align: center; padding: 26px 0 0; }
+.page-foot .heart { color: var(--gold); font-size: 13px; letter-spacing: 3px; }
+.page-foot .back {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 16px; padding: 12px 28px;
+  font-size: 13.5px; letter-spacing: 2px;
+  color: var(--accent); text-decoration: none;
+  border: 1px solid var(--accent); border-radius: 999px;
+}
+.page-foot .back:active { background: var(--accent); color: #fff; }
+.page-foot .updated { margin-top: 18px; font-size: 11px; color: #b0a48d; letter-spacing: .5px; }

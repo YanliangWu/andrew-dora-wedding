@@ -184,5 +184,11 @@ body {
   border-color: transparent;
   box-shadow: 0 8px 20px rgba(166, 58, 50, .28);
 }
+.btn-guide {
+  color: #7a5c22;
+  background: #fdf8ec;
+  border-color: #e6d7b4;
+  font-weight: 500;
+}
 .ico { font-size: 17px; }
 .thanks { margin-top: 18px; font-size: 13px; letter-spacing: 3px; color: #8a8070; }

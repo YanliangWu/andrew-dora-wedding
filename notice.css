@@ -1,5 +1,7 @@
 /* 宾客须知副页 —— 复用 style.css 的配色与字体 */
 body.notice-page { background: var(--paper); }
+html { scroll-behavior: smooth; }
+section[id], details[id], .block[id] { scroll-margin-top: 58px; }
 
 .wrap { max-width: 520px; margin: 0 auto; padding: 0 18px 72px; }
 
@@ -123,6 +125,43 @@ td:first-child { color: var(--ink); font-weight: 500; }
 td { color: #5c5346; }
 tr:last-child td { border-bottom: none; }
 .hint-scroll { font-size: 11px; color: #b0a48d; margin-top: 6px; }
+
+/* 推荐交通卡片 */
+.picks { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.pick {
+  background: linear-gradient(180deg, #fffdf8, #faf4e8);
+  border: 1px solid #e6d9bd;
+  border-radius: 13px;
+  padding: 13px 14px 12px;
+}
+.pick-top { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+.pick-ico { font-size: 19px; line-height: 1; }
+.badge {
+  font-size: 10px; font-weight: 600; letter-spacing: 1px;
+  color: #fff; background: var(--accent);
+  padding: 3px 9px; border-radius: 999px;
+}
+.pick h4 { font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: .3px; }
+.pick-meta { font-size: 12px; color: #8a8070; margin-top: 4px; line-height: 1.6; }
+.pick-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.pick-row span {
+  font-size: 11.5px; color: #6d6353;
+  background: #fff; border: 1px solid #ece2ce;
+  padding: 3px 9px; border-radius: 999px;
+}
+.pick p { font-size: 12.8px; line-height: 1.72; color: #5c5346; margin-top: 9px; }
+.pick-jump {
+  display: inline-block; margin-top: 9px;
+  font-size: 12.5px; color: var(--accent); text-decoration: none;
+  border-bottom: 1px solid rgba(166, 58, 50, .3);
+  padding-bottom: 1px;
+}
+details.rec { border-top-color: #e7dbc0; }
+details.rec > summary .rec-tag {
+  font-size: 9.5px; font-weight: 600; letter-spacing: 1px;
+  color: #fff; background: var(--accent);
+  padding: 2px 7px; border-radius: 999px;
+}
 
 /* 信息条 */
 .note {

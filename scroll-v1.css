@@ -1,8 +1,6 @@
 :root {
-  /* 实测请柬纸色（原图留白中位色）。页面留白用同一个色，
-     图片 object-fit: contain 的周边空档就与画面纸色完全一致，看不出边界。 */
-  --paper: #f0eadf;
-  --paper-deep: #e8e0d1;
+  --paper: #f2ede1;
+  --paper-deep: #ece5d4;
   --ink: #4a4238;
   --accent: #a63a32;
   --gold: #c9a25e;
@@ -10,32 +8,17 @@
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* 整页不滚动，滚动交给 #pager（这样翻页吸附才稳，也不会触发下拉刷新）。
-   注意作用域：notice.html / card.html 也引用本文件、且自身是长文档，
-   所以只对声明了 .page-lock 的页面加锁，不能写成全局 html, body。 */
 html { scroll-behavior: smooth; }
-html.page-lock,
-html.page-lock body {
-  height: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
-}
 
 body {
   background: var(--paper);
   color: var(--ink);
   font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
-#app {
-  max-width: 520px;
-  margin: 0 auto;
-  height: 100vh;
-  height: 100dvh;
-  position: relative;
-  overflow: hidden;
-}
+#app { max-width: 520px; margin: 0 auto; min-height: 100dvh; position: relative; }
 
 /* ---------- 封面 ---------- */
 #cover {
@@ -127,79 +110,48 @@ body {
   100% { opacity: 0; transform: translate3d(-6vw, 108vh, 0) rotate(560deg); }
 }
 
-/* ================= 整屏翻页 ================= */
-/* 关键：滚动条只在这里；每页正好一屏高；scroll-snap 负责"一滑一页"。 */
-#pager {
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scroll-snap-type: y mandatory;
-  overscroll-behavior-y: contain;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-  scrollbar-width: none;
-  opacity: 0;
-  transition: opacity .8s ease .2s;
-}
-#pager::-webkit-scrollbar { display: none; }
-#app.started #pager { opacity: 1; }
+/* ---------- 内容 ---------- */
+#scroll { opacity: 0; transition: opacity .8s ease .2s; }
+#app.started #scroll { opacity: 1; }
 
-.page {
-  position: relative;
-  height: 100%;
+.sec {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  /* 吸附到每页顶部；scroll-snap-stop: always 防止快速一滑跨过多页 */
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
+  padding: 4vw 0 0;
 }
-
-.page-img {
+.sec:first-child { padding-top: 0; }
+.sec img {
   width: 100%;
-  height: 100%;
+  height: auto;
   display: block;
-  object-fit: contain;   /* 整页图完整显示，四周留白与画面纸色同色 */
 }
 
-/* 首屏动图：视频是灰调背景，满屏铺满（cover）才不会有米色边框；
-   平板/桌面等较宽的屏幕改回 contain，避免裁掉人物。 */
+/* 首屏动态 hero（竖版 9:16 视频，静音自动循环） */
 .hero-video {
   width: 100%;
-  height: 100%;
+  height: auto;
   display: block;
-  object-fit: cover;
   background: var(--paper);
 }
-@media (min-aspect-ratio: 3/4) {
-  .hero-video { object-fit: contain; }
+
+/* 滚动淡入 */
+.reveal { opacity: 0; transform: translateY(36px); transition: opacity 1s ease, transform 1s ease; }
+.reveal.in { opacity: 1; transform: none; }
+.sec.reveal.in img { animation: settle 1.2s ease both; }
+@keyframes settle {
+  from { transform: scale(1.02); }
+  to   { transform: scale(1); }
 }
 
-/* 翻到本页时内容轻微淡入放大（不依赖 JS 也存在：默认就是完全可见） */
-.page.in > .page-img { animation: pageIn .9s cubic-bezier(.22,.61,.36,1) both; }
-@keyframes pageIn {
-  from { opacity: 0; transform: scale(1.025); }
-  to   { opacity: 1; transform: none; }
-}
-
-/* 首屏下滑提示（浮在视频上） */
-.scroll-hint {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(20px + env(safe-area-inset-bottom));
-  text-align: center;
-  pointer-events: none;
-  transition: opacity .4s ease;
-}
+/* 首屏下滑提示 */
+.scroll-hint { padding: 10px 0 26px; }
 .scroll-hint span {
   display: block;
   width: 1.5px;
   height: 34px;
   margin: 0 auto;
-  background: linear-gradient(rgba(255,255,255,.95), rgba(255,255,255,0));
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,.35));
+  background: linear-gradient(var(--gold), transparent);
   animation: drip 1.8s ease infinite;
 }
 @keyframes drip {
@@ -209,11 +161,10 @@ body {
   100% { transform: scaleY(0); transform-origin: bottom; }
 }
 
-/* ---------- 最后一页：操作区 ---------- */
-.page-actions {
-  flex-direction: column;
-  padding: calc(24px + env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom));
+/* ---------- 操作区 ---------- */
+.actions {
   text-align: center;
+  padding: 30px 24px 60px;
 }
 .btn {
   display: flex;
@@ -249,56 +200,3 @@ body {
 }
 .ico { font-size: 17px; }
 .thanks { margin-top: 18px; font-size: 13px; letter-spacing: 3px; color: #8a8070; }
-
-/* 操作区入场错落 */
-.page-actions.in .btn,
-.page-actions.in .thanks {
-  animation: pageIn .7s cubic-bezier(.22,.61,.36,1) both;
-  animation-delay: calc(var(--i, 0) * 90ms + 60ms);
-}
-
-/* ---------- 右侧翻页圆点 ---------- */
-#dots {
-  position: absolute;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  z-index: 70;
-  opacity: 0;
-  transition: opacity .6s ease .5s;
-}
-#app.started #dots { opacity: 1; }
-#dots button {
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  background: none;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-#dots button::before {
-  content: "";
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: rgba(74, 66, 56, .22);
-  box-shadow: 0 1px 2px rgba(255,255,255,.6);
-  transition: background .3s ease, transform .3s ease;
-}
-#dots button[aria-current="true"]::before {
-  background: var(--accent);
-  transform: scale(1.5);
-}
-
-/* 尊重"减少动态效果"偏好 */
-@media (prefers-reduced-motion: reduce) {
-  .page.in > .page-img,
-  .page-actions.in .btn,
-  .page-actions.in .thanks { animation: none; }
-  #petals { display: none; }
-}

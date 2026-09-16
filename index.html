@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="page-lock">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="description" content="Andrew & Dora 婚礼请柬 · 2026.11.14 · 珠海横琴湾酒店">
-<meta name="theme-color" content="#f2ede1">
+<meta name="theme-color" content="#f0eadf">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
@@ -33,55 +33,72 @@
       <p class="cover-date">2026 . 11 . 14</p>
       <p class="cover-venue">珠海 · 横琴湾酒店 · 婚礼亭</p>
       <button id="open-btn" type="button">开启请柬</button>
-      <p class="cover-hint"> invitation </p>
+      <p class="cover-hint"> swipe up </p>
     </div>
   </div>
 
   <!-- 花瓣飘落 -->
   <div id="petals" aria-hidden="true"></div>
 
-  <main id="scroll">
-    <section class="sec" style="--d:0">
-      <img src="assets/sec1.webp" alt="Andrew & Dora" class="hero-img">
-      <div class="scroll-hint"><span></span></div>
-    </section>
-    <section class="sec" style="--d:1">
-      <img src="assets/sec2.webp" alt="拱门下起舞的新人" loading="lazy">
-    </section>
-    <section class="sec" style="--d:2">
-      <img src="assets/sec3.webp" alt="新郎 吴彦良 GROOM · 新娘 魏雪纯 BRIDE" loading="lazy">
-    </section>
-    <section class="sec" style="--d:3">
-      <img src="assets/sec4.webp" alt="Save the Date · 我们诚挚地邀请你" loading="lazy">
-    </section>
-    <section class="sec" style="--d:4">
-      <img src="assets/sec5.webp" alt="Timeline · 16:00 签到茶歇 / 16:30 户外仪式 / 18:00 晚宴 / 19:30 After Party" loading="lazy">
-    </section>
-    <section class="sec" style="--d:5">
-      <img src="assets/sec6.webp" alt="2026.11.14 珠海·横琴湾酒店·婚礼亭 · Dress Codes" loading="lazy">
-    </section>
-    <section class="sec" style="--d:6">
-      <img src="assets/sec7.webp" alt="Cheers To Love · 好久不见，婚礼见！" loading="lazy">
+  <!-- 整屏翻页容器：一滑一页，自动吸附 -->
+  <main id="pager">
+
+    <!-- 1 / 5 · 开场动图（豆包生成 · 已去水印 · 静音自动循环） -->
+    <section class="page page-hero">
+      <video class="hero-video" muted loop playsinline preload="auto"
+             poster="assets/hero-poster.jpg" aria-label="Andrew &amp; Dora 婚礼动画">
+        <source src="assets/hero.mp4" type="video/mp4">
+        <source src="assets/hero.webm" type="video/webm">
+      </video>
+      <div class="scroll-hint" aria-hidden="true"><span></span></div>
     </section>
 
-    <!-- 操作区 -->
-    <section class="actions reveal">
-      <a class="btn btn-primary" href="card.html">
+    <!-- 2 / 5 · 拱门下起舞 + 新郎新娘 -->
+    <section class="page">
+      <img class="page-img" src="assets/pg1.webp"
+           alt="拱门下起舞的新人 · 新郎 吴彦良 GROOM · 新娘 魏雪纯 BRIDE">
+    </section>
+
+    <!-- 3 / 5 · Save the Date + Timeline -->
+    <section class="page">
+      <img class="page-img" src="assets/pg2.webp"
+           alt="Save the Date：我们诚挚地邀请陪伴我们度过生命中每一段闪亮岁月的你能够到场见证这一天。Timeline：16:00 签到茶歇 / 16:30 户外仪式 / 18:00 晚宴 / 19:30 After Party">
+    </section>
+
+    <!-- 4 / 5 · 日期场地着装 + 寄语 -->
+    <section class="page">
+      <img class="page-img" src="assets/pg3.webp"
+           alt="2026.11.14 珠海·横琴湾酒店·婚礼亭 · Dress Codes 米白/浅卡其/浅粉等低饱和颜色服装 · Cheers To Love 好久不见，婚礼见！">
+    </section>
+
+    <!-- 5 / 5 · 操作 -->
+    <section class="page page-actions">
+      <a class="btn btn-primary" style="--i:0" href="card.html">
         <span class="ico">💳</span> 领取我的电子请柬卡
       </a>
-      <a class="btn btn-guide" href="notice.html">
+      <a class="btn btn-guide" style="--i:1" href="notice.html">
         <span class="ico">🧳</span> 宾客须知 · 交通 / 证件 / 签证
       </a>
-      <a class="btn" id="cal-btn" href="assets/wedding.ics" download="andrew-dora-wedding.ics">
+      <a class="btn" style="--i:2" id="cal-btn" href="assets/wedding.ics" download="andrew-dora-wedding.ics">
         <span class="ico">📅</span> 保存到日历
       </a>
-      <a class="btn" id="map-btn" target="_blank" rel="noopener"
+      <a class="btn" style="--i:3" id="map-btn" target="_blank" rel="noopener"
          href="https://uri.amap.com/search?keyword=%E7%8F%A0%E6%B5%B7%E6%A8%AA%E7%90%B4%E6%B9%BE%E9%85%92%E5%BA%97&src=andrew-dora-wedding">
         <span class="ico">📍</span> 导航到婚礼亭
       </a>
-      <p class="thanks">期待与你见面 ♡</p>
+      <p class="thanks" style="--i:4">期待与你见面 ♡</p>
     </section>
+
   </main>
+
+  <!-- 右侧翻页圆点（静态写好，JS 只负责切换当前页，避免脚本异常导致导航丢失） -->
+  <nav id="dots" aria-label="翻页导航">
+    <button type="button" aria-label="第 1 页" aria-current="true"></button>
+    <button type="button" aria-label="第 2 页"></button>
+    <button type="button" aria-label="第 3 页"></button>
+    <button type="button" aria-label="第 4 页"></button>
+    <button type="button" aria-label="第 5 页"></button>
+  </nav>
 </div>
 
 <script src="main.js"></script>

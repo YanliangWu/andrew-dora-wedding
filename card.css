@@ -11,7 +11,7 @@ body.card-page .page-head { padding: 26px 0 18px; }
 
 /* ---------- 钱包卡面 ---------- */
 /* 卡面底色刻意等于 Apple pass 的 backgroundColor（请柬纸色），
-   这样 strip 图片的羽化边缘与卡面无缝相接。 */
+   图片与卡面无缝相接。 */
 .pass {
   --pass-paper: #f3ede2;
   border-radius: 18px;
@@ -41,8 +41,6 @@ body.card-page .page-head { padding: 26px 0 18px; }
   color: #a99d87;
   white-space: nowrap;
 }
-
-.pass-strip { display: block; width: 100%; height: auto; }
 
 .pass-fields { padding: 10px 17px 4px; }
 .pass-row {

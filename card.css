@@ -1,0 +1,153 @@
+/* 电子请柬卡 —— 复用 style.css / notice.css 的配色与组件，这里只写钱包卡特有的部分 */
+
+body.card-page { background: var(--paper); }
+
+/* 关键：作者样式里的 display:flex / display:block 会盖掉 hidden 属性的
+   display:none（UA 样式优先级最低），所以必须显式兜一层。 */
+[hidden] { display: none !important; }
+
+/* 页面顶部的 kicher/标题沿用 notice.css 的 .page-head 体系 */
+body.card-page .page-head { padding: 26px 0 18px; }
+
+/* ---------- 钱包卡面 ---------- */
+/* 卡面底色刻意等于 Apple pass 的 backgroundColor（请柬纸色），
+   这样 strip 图片的羽化边缘与卡面无缝相接。 */
+.pass {
+  --pass-paper: #f3ede2;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--pass-paper);
+  border: 1px solid #e4d9c2;
+  box-shadow: 0 14px 34px rgba(120, 100, 70, .18);
+  margin-bottom: 18px;
+}
+
+.pass-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 17px 9px;
+}
+.pass-brand {
+  font-family: "Snell Roundhand", "Brush Script MT", "STKaiti", cursive;
+  font-size: 23px;
+  line-height: 1.1;
+  color: var(--accent);
+}
+.pass-slug {
+  font-size: 9.5px;
+  letter-spacing: 2px;
+  color: #a99d87;
+  white-space: nowrap;
+}
+
+.pass-strip { display: block; width: 100%; height: auto; }
+
+.pass-fields { padding: 10px 17px 4px; }
+.pass-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px 0;
+  border-bottom: 1px dashed #e3d8c1;
+}
+.pass-row:last-child { border-bottom: none; }
+.pass-row .k {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  letter-spacing: 1.5px;
+  color: #9c907b;
+}
+.pass-row .v {
+  font-size: 13.5px;
+  line-height: 1.5;
+  font-weight: 500;
+  color: #2f2a22;
+  text-align: right;
+}
+.pass-row.hl .v { color: var(--accent); font-weight: 600; }
+
+/* ---------- 签到二维码 ---------- */
+.pass-qr {
+  margin-top: 10px;
+  padding: 4px 17px 20px;
+  text-align: center;
+}
+.qr-box {
+  display: inline-block;
+  padding: 11px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 3px 10px rgba(120, 100, 70, .1);
+  line-height: 0;
+  min-width: 132px;
+  min-height: 132px;
+}
+.qr-box svg, .qr-box img { display: block; width: 132px; height: 132px; }
+.qr-cap {
+  margin-top: 10px;
+  font-size: 11.5px;
+  letter-spacing: 1.5px;
+  color: #8a8070;
+}
+.qr-link {
+  margin-top: 8px;
+  padding: 4px 10px;
+  font: inherit;
+  font-size: 11px;
+  color: #a99d87;
+  background: none;
+  border: none;
+  border-bottom: 1px dotted #cfc3a8;
+  cursor: pointer;
+}
+.qr-url {
+  margin-top: 10px;
+  padding: 9px 11px;
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: #6d6353;
+  word-break: break-all;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #ece2ce;
+}
+
+/* ---------- 无 token 时的提示 ---------- */
+.pass-nowhere {
+  padding: 16px 17px 20px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.75;
+  color: #6d6353;
+}
+.pass-nowhere b { color: var(--accent); }
+
+/* ---------- 主按钮沿用 notice.css 的 .btn-row，这里只调 Apple 按钮观感 ---------- */
+#btn-apple { background: #111; border-color: transparent; color: #fff; }
+#btn-apple:hover { opacity: .92; }
+
+/* 整行单按钮（通用安装页 / 打开请柬） */
+.btn-row-single {
+  display: block;
+  margin-top: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  letter-spacing: .5px;
+  text-align: center;
+  text-decoration: none;
+  color: #7a5c22;
+  background: #fdf8ec;
+  border: 1px solid #e6d7b4;
+  border-radius: 11px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pass { animation: cardIn .7s cubic-bezier(.22,.9,.3,1) both; }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(22px) scale(.985); }
+    to   { opacity: 1; transform: none; }
+  }
+}

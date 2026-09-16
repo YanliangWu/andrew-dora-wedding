@@ -1,0 +1,17 @@
+{
+  "name": "Andrew & Dora · Wedding Pass",
+  "short_name": "Wedding Pass",
+  "description": "Andrew & Dora 婚礼电子请柬卡 · 2026.11.14 珠海横琴",
+  "lang": "zh-CN",
+  "start_url": "./card.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2ede1",
+  "theme_color": "#f2ede1",
+  "icons": [
+    { "src": "assets/wallet/pwa-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/wallet/pwa-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/wallet/pwa-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" }
+  ]
+}

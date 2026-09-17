@@ -163,32 +163,81 @@ body {
   object-fit: contain;   /* 整页图完整显示，四周留白与画面纸色同色 */
 }
 
-/* 首屏动图：视频是灰调背景，满屏铺满（cover）才不会有米色边框；
+/* ---------- 首屏：动图 + 纸色名条 ----------
+   视频里的 "Andrew & Dora" 是画面的一部分（英文手写体），
+   中文全名需要另给位置。实测视频 y95% 以下依旧是人物与裙摆，
+   没有能压字的空白带，所以不用叠加文字，而是在视频下方单开一条纸色带：
+   字清晰、不会被人物透过，也让首屏与第二屏（同为纸色）接得连续。 */
+.page-hero {
+  flex-direction: column;
+  align-items: stretch;
+  background: var(--paper);
+}
+
+.hero-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;        /* flex 子项默认 min-height:auto，不加这行视频会把容器撑破 */
+  width: 100%;
+  overflow: hidden;
+}
+
+/* 视频是灰调背景，满屏铺满（cover）才不会有米色边框；
+   object-position: center top 是给矮屏兜底：手机比 16:9 高时 cover 只裁两侧，
+   但遇到 16:9 或更矮的屏幕会改裁上下 —— 那时保住顶部（吊灯/花环）比保住地面重要。
    平板/桌面等较宽的屏幕改回 contain，避免裁掉人物。 */
 .hero-video {
   width: 100%;
   height: 100%;
   display: block;
   object-fit: cover;
+  object-position: center top;
   background: var(--paper);
 }
 @media (min-aspect-ratio: 3/4) {
   .hero-video { object-fit: contain; }
 }
 
+.hero-names {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 13px 20px calc(13px + env(safe-area-inset-bottom));
+}
+.hn-col { text-align: center; }
+.hn-role {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 9.5px;
+  letter-spacing: .2em;
+  color: var(--gold);
+}
+.hn-name {
+  display: block;
+  font-family: "Songti SC", "STSong", "Source Han Serif SC", serif;
+  font-size: 19px;
+  letter-spacing: .16em;
+  color: var(--ink);
+}
+.hn-heart { color: var(--accent); font-size: 12px; line-height: 1; opacity: .8; }
+
 /* 翻到本页时内容轻微淡入放大（不依赖 JS 也存在：默认就是完全可见） */
-.page.in > .page-img { animation: pageIn .9s cubic-bezier(.22,.61,.36,1) both; }
+.page.in > .page-img,
+.page.in > .hero-names { animation: pageIn .9s cubic-bezier(.22,.61,.36,1) both; }
 @keyframes pageIn {
   from { opacity: 0; transform: scale(1.025); }
   to   { opacity: 1; transform: none; }
 }
 
-/* 首屏下滑提示（浮在视频上） */
+/* 首屏下滑提示（浮在视频上。现在 .scroll-hint 在 .hero-stage 里，
+   所以这里的 bottom 是相对视频下沿算的，不用再留 home indicator 的距离） */
 .scroll-hint {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(20px + env(safe-area-inset-bottom));
+  bottom: 18px;
   text-align: center;
   pointer-events: none;
   transition: opacity .4s ease;
@@ -198,8 +247,10 @@ body {
   width: 1.5px;
   height: 34px;
   margin: 0 auto;
-  background: linear-gradient(rgba(255,255,255,.95), rgba(255,255,255,0));
-  filter: drop-shadow(0 1px 3px rgba(0,0,0,.35));
+  /* 视频下沿是浅色地面，白色渐变线几乎看不见 → 改用墨色 + 浅色描边，
+     在浅地步和两侧的深色柏树上都读得出来 */
+  background: linear-gradient(rgba(74, 66, 56, .6), rgba(74, 66, 56, 0));
+  filter: drop-shadow(0 1px 2px rgba(255, 255, 255, .55));
   animation: drip 1.8s ease infinite;
 }
 @keyframes drip {
@@ -298,6 +349,7 @@ body {
 /* 尊重"减少动态效果"偏好 */
 @media (prefers-reduced-motion: reduce) {
   .page.in > .page-img,
+  .page.in > .hero-names,
   .page-actions.in .btn,
   .page-actions.in .thanks { animation: none; }
   #petals { display: none; }

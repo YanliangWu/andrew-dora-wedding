@@ -45,14 +45,31 @@
 
     <!-- 1 / 4 · 开场动图（豆包生成 · 已去水印 · 静音自动循环）
          ⚠️ 原「拱门下起舞」那一屏（pg1）已删：视频就是这一屏的动图版，
-         两者内容重复，留着会连着两屏看到同一个画面。 -->
+         两者内容重复，留着会连着两屏看到同一个画面。
+         视频里那两行英文手写名是画面的一部分；中文全名（原第一屏图上的
+         「新郎 吴彦良 / 新娘 魏雪纯」）另放在下方纸色名条里 ——
+         实测视频 y95% 以下仍是人物与裙摆，压字会糊在人物身上。 -->
     <section class="page page-hero">
-      <video class="hero-video" muted loop playsinline preload="auto"
-             poster="assets/hero-poster.jpg" aria-label="Andrew &amp; Dora 婚礼动画">
-        <source src="assets/hero.mp4" type="video/mp4">
-        <source src="assets/hero.webm" type="video/webm">
-      </video>
-      <div class="scroll-hint" aria-hidden="true"><span></span></div>
+      <div class="hero-stage">
+        <video class="hero-video" muted loop playsinline preload="auto"
+               poster="assets/hero-poster.jpg" aria-label="Andrew &amp; Dora 婚礼动画">
+          <source src="assets/hero.mp4" type="video/mp4">
+          <source src="assets/hero.webm" type="video/webm">
+        </video>
+        <div class="scroll-hint" aria-hidden="true"><span></span></div>
+      </div>
+
+      <div class="hero-names">
+        <div class="hn-col">
+          <span class="hn-role">新郎 · GROOM</span>
+          <span class="hn-name">吴彦良</span>
+        </div>
+        <span class="hn-heart" aria-hidden="true">♥</span>
+        <div class="hn-col">
+          <span class="hn-role">新娘 · BRIDE</span>
+          <span class="hn-name">魏雪纯</span>
+        </div>
+      </div>
     </section>
 
     <!-- 2 / 4 · Save the Date + Timeline -->

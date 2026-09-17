@@ -43,7 +43,9 @@
   <!-- 整屏翻页容器：一滑一页，自动吸附 -->
   <main id="pager">
 
-    <!-- 1 / 5 · 开场动图（豆包生成 · 已去水印 · 静音自动循环） -->
+    <!-- 1 / 4 · 开场动图（豆包生成 · 已去水印 · 静音自动循环）
+         ⚠️ 原「拱门下起舞」那一屏（pg1）已删：视频就是这一屏的动图版，
+         两者内容重复，留着会连着两屏看到同一个画面。 -->
     <section class="page page-hero">
       <video class="hero-video" muted loop playsinline preload="auto"
              poster="assets/hero-poster.jpg" aria-label="Andrew &amp; Dora 婚礼动画">
@@ -53,25 +55,19 @@
       <div class="scroll-hint" aria-hidden="true"><span></span></div>
     </section>
 
-    <!-- 2 / 5 · 拱门下起舞 + 新郎新娘 -->
-    <section class="page">
-      <img class="page-img" src="assets/pg1.webp"
-           alt="拱门下起舞的新人 · 新郎 吴彦良 GROOM · 新娘 魏雪纯 BRIDE">
-    </section>
-
-    <!-- 3 / 5 · Save the Date + Timeline -->
+    <!-- 2 / 4 · Save the Date + Timeline -->
     <section class="page">
       <img class="page-img" src="assets/pg2.webp"
            alt="Save the Date：我们诚挚地邀请陪伴我们度过生命中每一段闪亮岁月的你能够到场见证这一天。Timeline：16:00 签到茶歇 / 16:30 户外仪式 / 18:00 晚宴 / 19:30 After Party">
     </section>
 
-    <!-- 4 / 5 · 日期场地着装 + 寄语 -->
+    <!-- 3 / 4 · 日期场地着装 + 寄语 -->
     <section class="page">
       <img class="page-img" src="assets/pg3.webp"
            alt="2026.11.14 珠海·横琴湾酒店·婚礼亭 · Dress Codes 米白/浅卡其/浅粉等低饱和颜色服装 · Cheers To Love 好久不见，婚礼见！">
     </section>
 
-    <!-- 5 / 5 · 操作 -->
+    <!-- 4 / 4 · 操作 -->
     <section class="page page-actions">
       <a class="btn btn-primary" style="--i:0" href="card.html">
         <span class="ico">💳</span> 领取我的电子请柬卡
@@ -91,13 +87,13 @@
 
   </main>
 
-  <!-- 右侧翻页圆点（静态写好，JS 只负责切换当前页，避免脚本异常导致导航丢失） -->
+  <!-- 右侧翻页圆点（静态写好，JS 只负责切换当前页，避免脚本异常导致导航丢失）
+       个数必须与 .page 数一致 -->
   <nav id="dots" aria-label="翻页导航">
     <button type="button" aria-label="第 1 页" aria-current="true"></button>
     <button type="button" aria-label="第 2 页"></button>
     <button type="button" aria-label="第 3 页"></button>
     <button type="button" aria-label="第 4 页"></button>
-    <button type="button" aria-label="第 5 页"></button>
   </nav>
 </div>
 

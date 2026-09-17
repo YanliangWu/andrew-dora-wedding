@@ -11,6 +11,8 @@
   'use strict';
 
   var WALLET_API = 'https://api.walletwallet.dev';
+  // 飞书 RSVP 表单（公开 / 免登录 / 匿名）。预填规则见下方 rsvpHref()。
+  var RSVP_FORM = 'https://my.feishu.cn/share/base/form/shrcn5d7sc5fYeMeP18VhxHOYEh';
   var AMAP = 'https://uri.amap.com/search?keyword=%E7%8F%A0%E6%B5%B7%E9%95%BF%E9%9A%86%E6%A8%AA%E7%90%B4%E6%B9%BE%E9%85%92%E5%BA%97&src=andrew-dora-wedding';
   var GMAPS = 'https://www.google.com/maps/search/?api=1&query=Chimelong+Hengqin+Bay+Hotel+Zhuhai';
   var APPLE_MAPS = 'https://maps.apple.com/?q=Chimelong+Hengqin+Bay+Hotel';
@@ -28,6 +30,10 @@
       w_h: '加入手机钱包', w_apple: ' 添加到 Apple 钱包', w_google: '🤖 添加到 Google 钱包',
       w_lede: '加进钱包后，婚礼当天<b>快到婚礼亭时会自动在锁屏上弹出</b>，不用翻聊天记录找链接。',
       w_note: '<b>iPhone</b>：点「Apple 钱包」→ 打开文件即出现「添加」。<b>Android</b>：点「Google 钱包」。也可以直接<b>把本页添加到主屏幕</b>（浏览器分享菜单 → 添加到主屏幕），效果一样。',
+      r_h: '确认出席', r_lede: '麻烦在 <b>10 月 31 日前</b>回复一下能否到场，方便我们安排席位与餐饮。',
+      r_btn: '✅ 回复出席',
+      r_note: '打开后<b>你的名字已经填好</b>，只要点选几个选项就行，半分钟搞定。',
+      r_note_plain: '打开后填上你的名字，点选几个选项就行。',
       a_h: '当天要做的事', a_nav: '🧭 一键导航', a_map: '🍎 苹果地图',
       a_notice: '🧳 宾客须知', a_cal: '📅 加入日历',
       a_note: '还没定怎么来？「宾客须知」里有<b>坐船（中港城 / 港澳码头 → 九洲港）</b>和<b>开车走港珠澳大桥</b>两种推荐走法的完整攻略。',
@@ -52,6 +58,10 @@
       w_h: 'Add to Wallet', w_apple: 'Add to Apple Wallet', w_google: '🤖 Add to Google Wallet',
       w_lede: 'Once it is in your wallet, the pass <b>pops up on your lock screen when you get near the venue</b> — no more digging through chat history.',
       w_note: '<b>iPhone</b>: tap “Apple Wallet”, then open the downloaded file and tap Add. <b>Android</b>: tap “Google Wallet”. You can also simply <b>add this page to your home screen</b> — it works the same way.',
+      r_h: 'RSVP', r_lede: 'Please reply by <b>31 October</b> so we can plan seating and catering.',
+      r_btn: '✅ Reply to RSVP',
+      r_note: 'Your name is <b>already filled in</b> — just tap a few options, it takes half a minute.',
+      r_note_plain: 'Just add your name and tap a few options.',
       a_h: 'Quick actions', a_nav: '🧭 Navigate', a_map: '🍎 Apple Maps',
       a_notice: '🧳 Guest info', a_cal: '📅 Add to calendar',
       a_note: 'Not sure how to get here? The Guest Info page covers both recommended routes: <b>the ferry</b> (China Ferry Terminal / HK–Macau Ferry Terminal → Jiuzhou Port) and <b>driving across the HZMB bridge</b>.',
@@ -78,17 +88,30 @@
 
   function parse() {
     var q = new URLSearchParams(location.search);
-    var g = { lang: q.get('l') === 'en' ? 'en' : 'zh', name: '', salutation: '', table: '', seats: '', serial: '' };
+    var g = { lang: q.get('l') === 'en' ? 'en' : 'zh', name: '', salutation: '', table: '', seats: '', serial: '', invite: '' };
     var d = q.get('d');
     if (d) {
       var p = b64urlDecode(d).split('|');
       g.name = p[0] || ''; g.salutation = p[1] || ''; g.table = p[2] || '';
-      g.seats = p[3] || ''; g.serial = p[4] || '';
+      g.seats = p[3] || ''; g.serial = p[4] || ''; g.invite = p[5] || '';
     } else {
       g.name = q.get('n') || ''; g.salutation = q.get('h') || ''; g.table = q.get('t') || '';
-      g.seats = q.get('s') || ''; g.serial = q.get('k') || '';
+      g.seats = q.get('s') || ''; g.serial = q.get('k') || ''; g.invite = q.get('i') || '';
     }
     return g;
+  }
+
+  /* 飞书表单预填。实测（2026-09-17）：
+       · prefill_<题目名>=<值> 对文本题有效，多项可叠加；
+       · 飞书**没有** hide_<题目名> 这种参数（hide_X=1 反而会让该题预填失效），
+         用表单「显示条件」隐藏题目时预填也会被丢弃；
+       · 所以「邀请编号」题只能留在表单最后一位且保持可见（已调成第 11 题）。
+     题目名变了这里要跟着改 —— 表单在飞书里改，名字对不上就静默不预填。 */
+  function rsvpHref(g) {
+    var parts = [];
+    if (g.invite) parts.push('prefill_' + encodeURIComponent('邀请编号') + '=' + encodeURIComponent(g.invite));
+    if (g.name) parts.push('prefill_' + encodeURIComponent('你的名字') + '=' + encodeURIComponent(g.name));
+    return RSVP_FORM + (parts.length ? '?' + parts.join('&') : '');
   }
 
   /* ---------------- 渲染 ---------------- */
@@ -151,6 +174,13 @@
     document.getElementById('btn-map').href = APPLE_MAPS;
     document.getElementById('btn-invite').href = inviteHref;
     document.getElementById('btn-back').href = inviteHref;
+
+    // 确认出席：有邀请编号 → 名字+编号一起预填；没有（通用卡）→ 打开空白表单
+    document.getElementById('btn-rsvp').href = rsvpHref(g);
+    if (!g.invite) {
+      var note = document.querySelector('#rsvp-card [data-i18n="r_note"]');
+      if (note) note.innerHTML = dict.r_note_plain;
+    }
 
     // 带参数的专属链接（切换语言时保留数据）
     var params = new URLSearchParams(location.search);

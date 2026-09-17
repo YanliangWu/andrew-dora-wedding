@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en" class="page-lock">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="Andrew &amp; Dora's wedding invitation · November 14, 2026 · Hengqin Bay Hotel, Zhuhai">
+<meta name="theme-color" content="#f0eadf">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
+<link rel="apple-touch-icon" href="../assets/preview.jpg">
+
+<!-- 与中文版互为 alternate：搜索引擎/分享抓取能认出来，别删 -->
+<link rel="canonical" href="https://andrew-dora-wedding.pages.dev/en/">
+<link rel="alternate" hreflang="zh-CN" href="https://andrew-dora-wedding.pages.dev/">
+<link rel="alternate" hreflang="en" href="https://andrew-dora-wedding.pages.dev/en/">
+
+<!-- 微信 / 社交分享 -->
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Andrew &amp; Dora · Wedding Invitation">
+<meta property="og:description" content="November 14, 2026 · Hengqin Bay Hotel, Zhuhai — We would love to have you with us.">
+<meta property="og:image" content="https://andrew-dora-wedding.pages.dev/assets/preview.jpg">
+<meta property="og:url" content="https://andrew-dora-wedding.pages.dev/en/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://andrew-dora-wedding.pages.dev/assets/preview.jpg">
+<title>Andrew &amp; Dora · Save the Date</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body class="lang-en">
+
+<div id="app">
+  <!-- 开启请柬封面 -->
+  <div id="cover">
+    <div class="cover-inner">
+      <div class="cover-doodle">✦</div>
+      <h1 class="cover-names">Andrew<span class="amp">&amp;</span>Dora</h1>
+      <div class="cover-divider">─────  ♥  ─────</div>
+      <p class="cover-date">November 14, 2026</p>
+      <p class="cover-venue">Zhuhai · Hengqin Bay Hotel · Wedding Pavilion</p>
+      <button id="open-btn" type="button">Open Invitation</button>
+      <p class="cover-hint"> swipe up </p>
+    </div>
+  </div>
+
+  <!-- 花瓣飘落 -->
+  <div id="petals" aria-hidden="true"></div>
+
+  <!-- 整屏翻页容器：一滑一页，自动吸附（样式与逻辑与中文版完全共用） -->
+  <main id="pager">
+
+    <!-- 1 / 4 · Opening animation（shared with the Chinese version — the clip is language-neutral）
+         ⚠️ The still image that used to sit here (arch + first dance) is intentionally not used:
+         the video *is* the animated version of that very scene. -->
+    <section class="page page-hero">
+      <div class="hero-stage">
+        <video class="hero-video" muted loop playsinline preload="auto"
+               poster="../assets/hero-poster.jpg" aria-label="Andrew &amp; Dora wedding animation">
+          <source src="../assets/hero.mp4" type="video/mp4">
+          <source src="../assets/hero.webm" type="video/webm">
+        </video>
+        <div class="scroll-hint" aria-hidden="true"><span></span></div>
+      </div>
+
+      <!-- 中文版名条放的是中文全名，这里放英文全名（视频里只有手写的 Andrew & Dora） -->
+      <div class="hero-names">
+        <div class="hn-col">
+          <span class="hn-role">GROOM</span>
+          <span class="hn-name">Andrew Wu</span>
+        </div>
+        <span class="hn-heart" aria-hidden="true">♥</span>
+        <div class="hn-col">
+          <span class="hn-role">BRIDE</span>
+          <span class="hn-name">Dora Wei</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 / 4 · Save the Date + Timeline -->
+    <section class="page">
+      <img class="page-img" src="assets/pg2.webp"
+           alt="Save the Date: You have shared in the brightest moments of our lives, and we would be honored to have you by our side to witness this special day. Timeline: 16:00 Welcome Tea &amp; Check-in / 16:30 Outdoor Ceremony / 18:00 Dinner Banquet / 19:30 After Party">
+    </section>
+
+    <!-- 3 / 4 · Date, venue, dress code + message -->
+    <section class="page">
+      <img class="page-img" src="assets/pg3.webp"
+           alt="November 14, 2026 · Zhuhai · Hengqin Bay Hotel · Wedding Pavilion · Dress Code: soft, muted tones — off-white, light khaki, blush pink · Cheers To Love">
+    </section>
+
+    <!-- 4 / 4 · Actions -->
+    <section class="page page-actions">
+      <a class="btn btn-primary" style="--i:0" href="../card.html?l=en">
+        <span class="ico">💳</span> Get My Wedding Pass
+      </a>
+      <a class="btn btn-guide" style="--i:1" href="../notice-en.html">
+        <span class="ico">🧳</span> Guest Info &amp; Transport
+      </a>
+      <a class="btn" style="--i:2" id="cal-btn" href="../assets/wedding.ics" download="andrew-dora-wedding.ics">
+        <span class="ico">📅</span> Add to Calendar
+      </a>
+      <a class="btn" style="--i:3" id="map-btn" target="_blank" rel="noopener"
+         href="https://www.google.com/maps/search/?api=1&amp;query=Chimelong+Hengqin+Bay+Hotel+Zhuhai">
+        <span class="ico">📍</span> Navigate to Venue
+      </a>
+      <a class="btn" style="--i:4" target="_blank" rel="noopener"
+         href="https://maps.apple.com/?q=Chimelong+Hengqin+Bay+Hotel">
+        <span class="ico">🍎</span> Open in Apple Maps
+      </a>
+      <p class="thanks" style="--i:5">See you there ♡</p>
+    </section>
+
+  </main>
+
+  <!-- 右侧翻页圆点（静态写好，JS 只负责切换当前页，避免脚本异常导致导航丢失）
+       个数必须与 .page 数一致 -->
+  <nav id="dots" aria-label="Page navigation">
+    <button type="button" aria-label="Page 1" aria-current="true"></button>
+    <button type="button" aria-label="Page 2"></button>
+    <button type="button" aria-label="Page 3"></button>
+    <button type="button" aria-label="Page 4"></button>
+  </nav>
+
+  <!-- 语言切换：跳回中文版（用相对路径，pages.dev 与 github.io 子目录部署都成立） -->
+  <a class="lang-pill" href="../">中文</a>
+</div>
+
+<script src="../main.js"></script>
+</body>
+</html>

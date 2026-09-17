@@ -12,6 +12,7 @@
 
   var WALLET_API = 'https://api.walletwallet.dev';
   var AMAP = 'https://uri.amap.com/search?keyword=%E7%8F%A0%E6%B5%B7%E9%95%BF%E9%9A%86%E6%A8%AA%E7%90%B4%E6%B9%BE%E9%85%92%E5%BA%97&src=andrew-dora-wedding';
+  var GMAPS = 'https://www.google.com/maps/search/?api=1&query=Chimelong+Hengqin+Bay+Hotel+Zhuhai';
   var APPLE_MAPS = 'https://maps.apple.com/?q=Chimelong+Hengqin+Bay+Hotel';
 
   var I18N = {
@@ -140,10 +141,16 @@
   function wireLinks(g) {
     var dict = I18N[g.lang];
     var noticeFile = g.lang === 'en' ? 'notice-en.html' : 'notice.html';
+    // 请柬正页分中英文两个入口：中文在仓库根，英文在 /en/ 子目录。
+    // 英文宾客的卡发出去后，点「打开请柬」不该落到中文页上。
+    var inviteHref = g.lang === 'en' ? 'en/' : 'index.html';
 
     document.getElementById('btn-notice').href = noticeFile;
-    document.getElementById('btn-nav').href = AMAP;
+    // 中文宾客给高德（国内唯一好用的），英文/海外宾客给 Google Maps
+    document.getElementById('btn-nav').href = g.lang === 'en' ? GMAPS : AMAP;
     document.getElementById('btn-map').href = APPLE_MAPS;
+    document.getElementById('btn-invite').href = inviteHref;
+    document.getElementById('btn-back').href = inviteHref;
 
     // 带参数的专属链接（切换语言时保留数据）
     var params = new URLSearchParams(location.search);

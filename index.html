@@ -10,18 +10,24 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
 <link rel="apple-touch-icon" href="assets/preview.jpg">
 
-<!-- 微信 / 社交分享 -->
+<!-- 与英文版互为 alternate（英文站是子目录 /en/，共用同一套 CSS/JS/视频） -->
+<link rel="canonical" href="https://andrew-dora-wedding.pages.dev/">
+<link rel="alternate" hreflang="zh-CN" href="https://andrew-dora-wedding.pages.dev/">
+<link rel="alternate" hreflang="en" href="https://andrew-dora-wedding.pages.dev/en/">
+
+<!-- 微信 / 社交分享（og:image 用国内站绝对地址：国外主机的图微信抓不到） -->
 <meta property="og:type" content="website">
+<meta property="og:locale" content="zh_CN">
 <meta property="og:title" content="Andrew & Dora 的婚礼邀请函">
 <meta property="og:description" content="2026.11.14 · 珠海·横琴湾酒店·婚礼亭 — 好久不见，婚礼见！">
-<meta property="og:image" content="https://yanliangwu.github.io/andrew-dora-wedding/assets/preview.jpg">
-<meta property="og:url" content="https://yanliangwu.github.io/andrew-dora-wedding/">
+<meta property="og:image" content="https://andrew-dora-wedding.pages.dev/assets/preview.jpg">
+<meta property="og:url" content="https://andrew-dora-wedding.pages.dev/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://yanliangwu.github.io/andrew-dora-wedding/assets/preview.jpg">
+<meta name="twitter:image" content="https://andrew-dora-wedding.pages.dev/assets/preview.jpg">
 <title>Andrew &amp; Dora · Save the Date</title>
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="lang-zh">
 
 <div id="app">
   <!-- 开启请柬封面 -->
@@ -112,6 +118,9 @@
     <button type="button" aria-label="第 3 页"></button>
     <button type="button" aria-label="第 4 页"></button>
   </nav>
+
+  <!-- 语言切换：跳到英文版（相对路径，pages.dev 与 github.io 子目录部署都成立） -->
+  <a class="lang-pill" href="en/">EN</a>
 </div>
 
 <script src="main.js"></script>

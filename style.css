@@ -346,6 +346,53 @@ body {
   transform: scale(1.5);
 }
 
+/* ---------- 中英文互切药丸 ----------
+   两版共用同一个 style.css，药丸固定在第 4 屏之外的右上角：
+   - z-index 高于 #cover(100)，所以**封面阶段就能切语言**（英文宾客落到
+     中文页时不用先点开请柬再找入口）；
+   - 用 absolute 而不是 fixed：跟随 #app 的 520px 栏宽，桌面端不会跑到屏幕最右边；
+   - 文案由 HTML 写死（中文页写 EN、英文页写中文），不需要 JS。 */
+.lang-pill {
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top));
+  right: 10px;
+  z-index: 120;
+  padding: 6px 14px;
+  font-size: 11.5px;
+  letter-spacing: 1.5px;
+  line-height: 1;
+  text-decoration: none;
+  color: #6d6353;
+  background: rgba(255, 255, 255, .84);
+  border: 1px solid #e0d6c2;
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(90, 75, 50, .1);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+.lang-pill:active { transform: scale(.95); }
+
+/* ---------- 英文版排版微调 ----------
+   英文串比中文长得多，沿用中文字距会撑破容器：
+   封面日期 "November 14, 2026"、场地 "Zhuhai · Hengqin Bay Hotel · Wedding Pavilion"、
+   按钮 "Guest Info & Transport" 都实测过宽度，这里收紧字距/字号。 */
+body.lang-en .cover-date { font-size: 19px; letter-spacing: 2px; }
+body.lang-en .cover-venue { font-size: 12.5px; letter-spacing: .04em; line-height: 1.7; }
+body.lang-en #open-btn {
+  padding: 14px 40px;
+  font-size: 15px;
+  letter-spacing: 3px;
+  text-indent: 3px;
+}
+body.lang-en .hn-role { letter-spacing: .3em; }
+body.lang-en .hn-name {
+  font-family: Georgia, "Times New Roman", "Songti SC", serif;
+  font-size: 17px;
+  letter-spacing: .06em;
+}
+body.lang-en .btn { letter-spacing: 1px; }
+body.lang-en .thanks { letter-spacing: 1.5px; }
+
 /* 尊重"减少动态效果"偏好 */
 @media (prefers-reduced-motion: reduce) {
   .page.in > .page-img,

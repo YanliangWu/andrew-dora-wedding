@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>页面走丢了 · Andrew &amp; Dora</title>
+<style>
+  :root { --paper:#f0eadf; --ink:#4a4238; --gold:#c9a25e; --accent:#a63a32; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; }
+  body {
+    background: radial-gradient(circle at 50% 22%, rgba(255,255,255,.7), transparent 58%), var(--paper);
+    color: var(--ink);
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; justify-content: center;
+    padding: 32px;
+  }
+  .box { text-align: center; max-width: 380px; animation: rise 1s ease both; }
+  @keyframes rise { from { opacity:0; transform: translateY(14px); } to { opacity:1; transform:none; } }
+  .doodle { font-size: 20px; color: var(--gold); letter-spacing: 12px; margin-bottom: 20px; }
+  .names {
+    font-family: "Snell Roundhand", "Brush Script MT", "STKaiti", cursive;
+    font-size: 34px; color: var(--accent); margin-bottom: 6px;
+  }
+  h1 { font-size: 19px; font-weight: 500; letter-spacing: 2px; margin-bottom: 14px; }
+  p { font-size: 14px; line-height: 1.9; color: var(--ink); opacity: .72; }
+  .rule { width: 46px; height: 1px; background: var(--gold); margin: 22px auto; }
+  a.home {
+    display: inline-block; margin-top: 26px; padding: 11px 26px;
+    border: 1px solid var(--gold); border-radius: 999px;
+    color: var(--accent); text-decoration: none;
+    font-size: 14px; letter-spacing: 1px;
+    transition: background .25s ease;
+  }
+  a.home:hover { background: rgba(201,162,94,.14); }
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="doodle">❦ ❦ ❦</div>
+    <div class="names">Andrew &amp; Dora</div>
+    <h1>这一页不见了</h1>
+    <p>你点到的地址不存在，或者链接已经过期。<br>This page has wandered off.</p>
+    <div class="rule"></div>
+    <a class="home" id="home" href="/">回到请柬</a>
+  </div>
+  <script>
+    /* 同一份文件要同时跑在 Cloudflare Pages（根路径 /）和
+       GitHub Pages（子路径 /andrew-dora-wedding/），所以首页地址按域名判断。 */
+    (function () {
+      var isGitHub = /(^|\.)github\.io$/i.test(location.hostname);
+      document.getElementById('home').href = isGitHub ? '/andrew-dora-wedding/' : '/';
+    })();
+  </script>
+</body>
+</html>

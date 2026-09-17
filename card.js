@@ -11,8 +11,14 @@
   'use strict';
 
   var WALLET_API = 'https://api.walletwallet.dev';
-  // 飞书 RSVP 表单（公开 / 免登录 / 匿名）。预填规则见下方 rsvpHref()。
-  var RSVP_FORM = 'https://my.feishu.cn/share/base/form/shrcn5d7sc5fYeMeP18VhxHOYEh';
+  // 飞书 RSVP 表单（公开 / 免登录 / 匿名）。中英文是同一个 RSVP 表上的两个表单视图，
+  // 数据进同一张表；表单外壳（"提交"等）随宾客浏览器语言自动切换。
+  var RSVP_FORM    = 'https://my.feishu.cn/share/base/form/shrcn5d7sc5fYeMeP18VhxHOYEh'; // 中文表单
+  var RSVP_FORM_EN = 'https://my.feishu.cn/share/base/form/shrcnrQ4Bxe6LKebUHs04peSceh'; // English form
+  var RSVP_Q = {
+    zh: { name: '你的名字', invite: '邀请编号' },
+    en: { name: 'Your name', invite: 'Invitation code' }
+  };
   var AMAP = 'https://uri.amap.com/search?keyword=%E7%8F%A0%E6%B5%B7%E9%95%BF%E9%9A%86%E6%A8%AA%E7%90%B4%E6%B9%BE%E9%85%92%E5%BA%97&src=andrew-dora-wedding';
   var GMAPS = 'https://www.google.com/maps/search/?api=1&query=Chimelong+Hengqin+Bay+Hotel+Zhuhai';
   var APPLE_MAPS = 'https://maps.apple.com/?q=Chimelong+Hengqin+Bay+Hotel';
@@ -108,10 +114,12 @@
        · 所以「邀请编号」题只能留在表单最后一位且保持可见（已调成第 11 题）。
      题目名变了这里要跟着改 —— 表单在飞书里改，名字对不上就静默不预填。 */
   function rsvpHref(g) {
+    var isEn = g.lang === 'en';
+    var q = isEn ? RSVP_Q.en : RSVP_Q.zh;
     var parts = [];
-    if (g.invite) parts.push('prefill_' + encodeURIComponent('邀请编号') + '=' + encodeURIComponent(g.invite));
-    if (g.name) parts.push('prefill_' + encodeURIComponent('你的名字') + '=' + encodeURIComponent(g.name));
-    return RSVP_FORM + (parts.length ? '?' + parts.join('&') : '');
+    if (g.invite) parts.push('prefill_' + encodeURIComponent(q.invite) + '=' + encodeURIComponent(g.invite));
+    if (g.name) parts.push('prefill_' + encodeURIComponent(q.name) + '=' + encodeURIComponent(g.name));
+    return (isEn ? RSVP_FORM_EN : RSVP_FORM) + (parts.length ? '?' + parts.join('&') : '');
   }
 
   /* ---------------- 渲染 ---------------- */

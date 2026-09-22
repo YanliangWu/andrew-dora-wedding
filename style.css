@@ -163,11 +163,11 @@ body {
   object-fit: contain;   /* 整页图完整显示，四周留白与画面纸色同色 */
 }
 
-/* ---------- 首屏：动图 + 纸色名条 ----------
-   视频里的 "Andrew & Dora" 是画面的一部分（英文手写体），
-   中文全名需要另给位置。实测视频 y95% 以下依旧是人物与裙摆，
-   没有能压字的空白带，所以不用叠加文字，而是在视频下方单开一条纸色带：
-   字清晰、不会被人物透过，也让首屏与第二屏（同为纸色）接得连续。 */
+/* ---------- 首屏：动图独占整屏 ----------
+   2026-09-22：原先视频下方还有一条纸色「新郎 / 新娘」名条，已删除。
+   它占掉约 68px 固定高度，把视频挤小；而画面里两个人恰好站在视频最底部，
+   名条紧贴在他们脚下，看着就像把视频压住了。现在 .hero-stage 是唯一子项，
+   视频铺满整屏。视频画面中间本身有手写体 "Andrew & Dora"。 */
 .page-hero {
   flex-direction: column;
   align-items: stretch;
@@ -185,7 +185,9 @@ body {
 /* 视频是灰调背景，满屏铺满（cover）才不会有米色边框；
    object-position: center top 是给矮屏兜底：手机比 16:9 高时 cover 只裁两侧，
    但遇到 16:9 或更矮的屏幕会改裁上下 —— 那时保住顶部（吊灯/花环）比保住地面重要。
-   平板/桌面等较宽的屏幕改回 contain，避免裁掉人物。 */
+   平板/桌面等较宽的屏幕改回 contain，避免裁掉人物。
+   ⚠️ 画面里两个人站在最底部，「矮屏裁下边」会直接切到人；
+   若日后桌面端反馈人物被截，先把 center top 改成 center。 */
 .hero-video {
   width: 100%;
   height: 100%;
@@ -198,34 +200,8 @@ body {
   .hero-video { object-fit: contain; }
 }
 
-.hero-names {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  padding: 13px 20px calc(13px + env(safe-area-inset-bottom));
-}
-.hn-col { text-align: center; }
-.hn-role {
-  display: block;
-  margin-bottom: 3px;
-  font-size: 9.5px;
-  letter-spacing: .2em;
-  color: var(--gold);
-}
-.hn-name {
-  display: block;
-  font-family: "Songti SC", "STSong", "Source Han Serif SC", serif;
-  font-size: 19px;
-  letter-spacing: .16em;
-  color: var(--ink);
-}
-.hn-heart { color: var(--accent); font-size: 12px; line-height: 1; opacity: .8; }
-
 /* 翻到本页时内容轻微淡入放大（不依赖 JS 也存在：默认就是完全可见） */
-.page.in > .page-img,
-.page.in > .hero-names { animation: pageIn .9s cubic-bezier(.22,.61,.36,1) both; }
+.page.in > .page-img { animation: pageIn .9s cubic-bezier(.22,.61,.36,1) both; }
 @keyframes pageIn {
   from { opacity: 0; transform: scale(1.025); }
   to   { opacity: 1; transform: none; }
@@ -391,19 +367,12 @@ body.lang-en #open-btn {
   letter-spacing: 3px;
   text-indent: 3px;
 }
-body.lang-en .hn-role { letter-spacing: .3em; }
-body.lang-en .hn-name {
-  font-family: Georgia, "Times New Roman", "Songti SC", serif;
-  font-size: 17px;
-  letter-spacing: .06em;
-}
 body.lang-en .btn { letter-spacing: 1px; }
 body.lang-en .thanks { letter-spacing: 1.5px; }
 
 /* 尊重"减少动态效果"偏好 */
 @media (prefers-reduced-motion: reduce) {
   .page.in > .page-img,
-  .page.in > .hero-names,
   .page-actions.in .btn,
   .page-actions.in .thanks { animation: none; }
   #petals { display: none; }

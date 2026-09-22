@@ -52,9 +52,11 @@
     <!-- 1 / 4 · 开场动图（豆包生成 · 已去水印 · 静音自动循环）
          ⚠️ 原「拱门下起舞」那一屏（pg1）已删：视频就是这一屏的动图版，
          两者内容重复，留着会连着两屏看到同一个画面。
-         视频里那两行英文手写名是画面的一部分；中文全名（原第一屏图上的
-         「新郎 吴彦良 / 新娘 魏雪纯」）另放在下方纸色名条里 ——
-         实测视频 y95% 以下仍是人物与裙摆，压字会糊在人物身上。 -->
+         2026-09-22：删掉了原先压在视频下方的纸色「新郎 / 新娘」名条 ——
+         它独立占掉约 68px 高度，把视频挤小；而画面里两个人正好站在视频
+         最底部（裙摆贴着下沿），名条紧贴着他们，看着就像把视频压住了。
+         现在视频独占整屏。中文全名（吴彦良 / 魏雪纯）按主人要求不再出现，
+         第一屏的名字由视频画面自带的手写体 "Andrew & Dora" 承担。 -->
     <section class="page page-hero">
       <div class="hero-stage">
         <video class="hero-video" muted loop playsinline preload="auto"
@@ -63,18 +65,6 @@
           <source src="assets/hero.webm" type="video/webm">
         </video>
         <div class="scroll-hint" aria-hidden="true"><span></span></div>
-      </div>
-
-      <div class="hero-names">
-        <div class="hn-col">
-          <span class="hn-role">新郎 · GROOM</span>
-          <span class="hn-name">吴彦良</span>
-        </div>
-        <span class="hn-heart" aria-hidden="true">♥</span>
-        <div class="hn-col">
-          <span class="hn-role">新娘 · BRIDE</span>
-          <span class="hn-name">魏雪纯</span>
-        </div>
       </div>
     </section>
 

@@ -29,12 +29,23 @@ body {
 }
 
 #app {
-  max-width: 520px;
+  max-width: 100%;      /* 移动端永远铺满，避免两侧露出纸色 */
   margin: 0 auto;
   height: 100vh;
   height: 100dvh;
   position: relative;
   overflow: hidden;
+}
+
+/* ⚠️ 2026-09-22 修「iPhone 露底色」：
+   原来这里无条件写死 `max-width: 520px`（想让桌面端收成一条手机栏）。
+   但横屏时视口宽度会超过它（iPhone 15 横屏 = 852px），于是左右各露出 166px 纸色
+   —— 实测左右边缘 100% 命中 --paper #f0eadf。
+   改条件时**不能只用宽度**：手机横屏也是 852px 宽，会被一起收窄。
+   所以要求「宽 + 高 + 鼠标设备」三条同时成立，手机横屏（矮）与平板/触屏都不命中。
+   （`min-height: 560px` 是让 headless 也能验证的那把尺，真机上由 pointer 兜底。） */
+@media (min-width: 768px) and (min-height: 560px) and (pointer: fine) {
+  #app { max-width: 520px; }
 }
 
 /* ---------- 封面 ---------- */
@@ -196,8 +207,31 @@ body {
   object-position: center top;
   background: var(--paper);
 }
+/* 宽屏（比例 ≥ 3/4，含手机横屏、平板、桌面）改用 contain，避免裁掉人物。
+   ⚠️ 2026-09-22：手机横屏（852×306，比例 2.78）也命中这里 → 视频缩成 172px 宽居中，
+   两侧露出 340px 纸色（用户报的「iPhone 露底色」就是这个）。
+   但根因不在 contain 本身（只有 contain 才能把人物看全），而在两侧空着没东西垫 ——
+   由下面那条规则用模糊画面补掉。 */
 @media (min-aspect-ratio: 3/4) {
   .hero-video { object-fit: contain; }
+}
+
+/* 手机横屏（矮而宽）：竖构图的视频没法既铺满又不裁到人，
+   所以用同一帧画面模糊放大铺底（竖屏视频在横屏播放器的常见处理），
+   中间仍是完整的视频。这样横屏也不露纸色，人物也不会被切掉。 */
+@media (orientation: landscape) and (max-height: 560px) {
+  .hero-stage::before {
+    content: "";
+    position: absolute;
+    inset: -8%;                      /* 外扩一点，避免模糊边缘透出底色 */
+    background: url("assets/hero-poster.jpg") center/cover no-repeat;
+    filter: blur(26px);
+  }
+  .hero-video {
+    position: relative;
+    z-index: 1;
+    background: transparent;         /* 让模糊层从视频两侧透出来 */
+  }
 }
 
 /* 翻到本页时内容轻微淡入放大（不依赖 JS 也存在：默认就是完全可见） */

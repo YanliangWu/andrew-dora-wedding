@@ -92,76 +92,19 @@ section[id], details[id], .block[id] { scroll-margin-top: 58px; }
 }
 .card .lede { font-size: 13px; color: #8a8070; line-height: 1.7; margin: 8px 0 14px; }
 
-.block { margin-top: 16px; }
-.block h3 {
-  font-size: 13.5px; font-weight: 600; color: var(--accent);
-  letter-spacing: .5px; margin-bottom: 8px;
-  display: flex; align-items: center; gap: 6px;
-}
-.block h3 .tag {
-  font-size: 10px; font-weight: 500; letter-spacing: .5px;
-  color: #fff; background: var(--gold);
-  padding: 2px 7px; border-radius: 999px;
-}
-.block h3 .tag.free { background: #4e9e6a; }
-.block p, .block li { font-size: 13.5px; line-height: 1.8; color: #5c5346; }
-.block ul { list-style: none; }
-.block li { position: relative; padding-left: 15px; margin-bottom: 3px; }
-.block li::before {
-  content: ""; position: absolute; left: 2px; top: 10px;
-  width: 5px; height: 5px; border-radius: 50%; background: #d9c8a4;
-}
-.block li b, .block p b { color: var(--ink); }
+/* 注：.block / .tag / details / .picks / 表格 等规则已随「宾客须知」瘦身一并删除
+   （2026-09-22 —— 须知页现在只剩 地点 / 当天流程 / 着装 三块，card.html 也不再用它们）。
+   若要写新的 bullet 列表或折叠块，从 git 历史里取回。 */
 
-/* 表格 */
-.table-scroll { overflow-x: auto; margin-top: 10px; -webkit-overflow-scrolling: touch; }
-table { border-collapse: collapse; width: 100%; min-width: 460px; font-size: 12.5px; }
-th, td { padding: 9px 10px; text-align: left; border-bottom: 1px solid #f0e9da; white-space: nowrap; }
-th {
-  font-weight: 600; color: #8a7f6c; font-size: 11.5px;
-  letter-spacing: .5px; background: #faf6ec;
+/* 着装色卡 */
+.swatches { display: flex; flex-wrap: wrap; gap: 11px 16px; margin-top: 2px; }
+.sw { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: #6d6353; }
+.sw i {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid #e2d8c4; display: block;
 }
-td:first-child { color: var(--ink); font-weight: 500; }
-td { color: #5c5346; }
-tr:last-child td { border-bottom: none; }
-.hint-scroll { font-size: 11px; color: #b0a48d; margin-top: 6px; }
-
-/* 推荐交通卡片 */
-.picks { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
-.pick {
-  background: linear-gradient(180deg, #fffdf8, #faf4e8);
-  border: 1px solid #e6d9bd;
-  border-radius: 13px;
-  padding: 13px 14px 12px;
-}
-.pick-top { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
-.pick-ico { font-size: 19px; line-height: 1; }
-.badge {
-  font-size: 10px; font-weight: 600; letter-spacing: 1px;
-  color: #fff; background: var(--accent);
-  padding: 3px 9px; border-radius: 999px;
-}
-.pick h4 { font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: .3px; }
-.pick-meta { font-size: 12px; color: #8a8070; margin-top: 4px; line-height: 1.6; }
-.pick-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
-.pick-row span {
-  font-size: 11.5px; color: #6d6353;
-  background: #fff; border: 1px solid #ece2ce;
-  padding: 3px 9px; border-radius: 999px;
-}
-.pick p { font-size: 12.8px; line-height: 1.72; color: #5c5346; margin-top: 9px; }
-.pick-jump {
-  display: inline-block; margin-top: 9px;
-  font-size: 12.5px; color: var(--accent); text-decoration: none;
-  border-bottom: 1px solid rgba(166, 58, 50, .3);
-  padding-bottom: 1px;
-}
-details.rec { border-top-color: #e7dbc0; }
-details.rec > summary .rec-tag {
-  font-size: 9.5px; font-weight: 600; letter-spacing: 1px;
-  color: #fff; background: var(--accent);
-  padding: 2px 7px; border-radius: 999px;
-}
+/* 深色底（卡其）那格加一圈内描边，避免在白卡上看不出边界 */
+.sw i { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .5); }
 
 /* 信息条 */
 .note {
@@ -175,7 +118,6 @@ details.rec > summary .rec-tag {
   line-height: 1.75;
   color: #6d6353;
 }
-.note.warn { background: #fdf1ef; border-left-color: var(--accent); }
 .note .ico { flex: 0 0 auto; font-size: 14px; line-height: 1.6; }
 
 /* 地址块 */
@@ -206,28 +148,6 @@ details.rec > summary .rec-tag {
   box-shadow: 0 6px 16px rgba(166, 58, 50, .22);
 }
 .btn-row a:active { transform: scale(.98); }
-
-/* 折叠 */
-details {
-  border-top: 1px solid #f0e9da;
-  margin-top: 12px;
-  padding-top: 12px;
-}
-details summary {
-  font-size: 13.5px; font-weight: 600; color: var(--accent);
-  cursor: pointer; list-style: none;
-  display: flex; align-items: center; gap: 6px;
-}
-details summary::-webkit-details-marker { display: none; }
-details summary::after {
-  content: "▾"; margin-left: auto; font-size: 12px; color: #c0b49c;
-  transition: transform .2s ease;
-}
-details[open] summary::after { transform: rotate(180deg); }
-details .body { padding-top: 10px; }
-details .body p, details .body li { font-size: 13.5px; line-height: 1.8; color: #5c5346; }
-details .body ol { padding-left: 18px; }
-details .body ol li { margin-bottom: 4px; }
 
 /* 时间轴（当天流程） */
 .steps { margin-top: 6px; }

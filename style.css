@@ -392,7 +392,7 @@ body {
 /* ---------- 英文版排版微调 ----------
    英文串比中文长得多，沿用中文字距会撑破容器：
    封面日期 "November 14, 2026"、场地 "Zhuhai · Hengqin Bay Hotel · Wedding Pavilion"、
-   按钮 "Guest Info & Transport" 都实测过宽度，这里收紧字距/字号。 */
+   按钮 "Guest Info" 都实测过宽度，这里收紧字距/字号。 */
 body.lang-en .cover-date { font-size: 19px; letter-spacing: 2px; }
 body.lang-en .cover-venue { font-size: 12.5px; letter-spacing: .04em; line-height: 1.7; }
 body.lang-en #open-btn {

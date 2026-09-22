@@ -308,13 +308,9 @@ body {
   border-color: #e6d7b4;
   font-weight: 500;
 }
-/* 回复出席：金色描边版，视觉上仅次于「领取请柬卡」，别抢主 CTA */
-.btn-rsvp {
-  color: #6d5a2c;
-  background: #fffdf6;
-  border-color: #cbb88a;
-  font-weight: 500;
-}
+/* ⚠️ 2026-09-22：原「回复出席」的次级金色描边样式已删。
+   领卡入口撤掉后 RSVP 就是唯一的正式 CTA，直接用 .btn-primary（红底白字）。
+   若哪天又需要「比 .btn 显眼、但不如主按钮」的层级，再补一条描边版即可。 */
 .ico { font-size: 17px; }
 .thanks { margin-top: 18px; font-size: 13px; letter-spacing: 3px; color: #8a8070; }
 

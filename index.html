@@ -80,26 +80,26 @@
            alt="2026.11.14 珠海·横琴湾酒店·婚礼亭 · Dress Codes 米白/浅卡其/浅粉等低饱和颜色服装 · Cheers To Love 好久不见，婚礼见！">
     </section>
 
-    <!-- 4 / 4 · 操作 -->
+    <!-- 4 / 4 · 操作（只留三个入口：回复出席 / 宾客须知 / 保存到日历）
+         ⚠️ 2026-09-22 按主人要求把操作屏从 5 个入口砍到 3 个（被删的两条文案
+         这里故意不复述，免得以后 grep 查残留时误报）：
+         - 砍掉「领卡」入口：钱包卡是按人一对一发专属链接的，正页不需要总入口
+           （宾客须知页脚仍留了一个入口，方便没收到链接的人自己找回）
+         - 砍掉「导航」入口：宾客须知里已经有高德 / 苹果 / Google 三个地图入口
+         改这里必须同步 en/index.html 与 build_paged_preview.py，否则预览图和线上对不上。
+         RSVP 从次级金色描边升级为主按钮（原主按钮就是被砍掉的那个），它现在是唯一的正式 CTA。 -->
     <section class="page page-actions">
-      <a class="btn btn-primary" style="--i:0" href="card.html">
-        <span class="ico">💳</span> 领取我的电子请柬卡
-      </a>
-      <a class="btn btn-rsvp" style="--i:1" id="rsvp-btn" target="_blank" rel="noopener"
+      <a class="btn btn-primary" style="--i:0" id="rsvp-btn" target="_blank" rel="noopener"
          href="https://my.feishu.cn/share/base/form/shrcn5d7sc5fYeMeP18VhxHOYEh">
         <span class="ico">✅</span> 回复出席 RSVP
       </a>
-      <a class="btn btn-guide" style="--i:2" href="notice.html">
+      <a class="btn btn-guide" style="--i:1" href="notice.html">
         <span class="ico">📋</span> 宾客须知 · 地点 / 流程 / 着装
       </a>
-      <a class="btn" style="--i:3" id="cal-btn" href="assets/wedding.ics" download="andrew-dora-wedding.ics">
+      <a class="btn" style="--i:2" id="cal-btn" href="assets/wedding.ics" download="andrew-dora-wedding.ics">
         <span class="ico">📅</span> 保存到日历
       </a>
-      <a class="btn" style="--i:4" id="map-btn" target="_blank" rel="noopener"
-         href="https://uri.amap.com/search?keyword=%E7%8F%A0%E6%B5%B7%E6%A8%AA%E7%90%B4%E6%B9%BE%E9%85%92%E5%BA%97&src=andrew-dora-wedding">
-        <span class="ico">📍</span> 导航到婚礼亭
-      </a>
-      <p class="thanks" style="--i:5">期待与你见面 ♡</p>
+      <p class="thanks" style="--i:3">期待与你见面 ♡</p>
     </section>
 
   </main>

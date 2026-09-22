@@ -1,7 +1,7 @@
 /* 宾客须知副页 —— 复用 style.css 的配色与字体 */
 body.notice-page { background: var(--paper); }
 html { scroll-behavior: smooth; }
-section[id], details[id], .block[id] { scroll-margin-top: 58px; }
+section[id] { scroll-margin-top: 58px; }   /* 挡开吸顶的 .toc 目录条 */
 
 .wrap { max-width: 520px; margin: 0 auto; padding: 0 18px 72px; }
 

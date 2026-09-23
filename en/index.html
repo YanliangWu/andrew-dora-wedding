@@ -89,10 +89,10 @@
          Keep in sync with index.html and build_paged_preview.py.
          RSVP was promoted to the primary button; it is now the only real CTA. -->
     <section class="page page-actions">
-      <a class="btn btn-primary" style="--i:0" id="rsvp-btn" target="_blank" rel="noopener"
-         href="https://my.feishu.cn/share/base/form/shrcnrQ4Bxe6LKebUHs04peSceh">
+      <button type="button" class="btn btn-primary" style="--i:0" id="rsvp-btn"
+              aria-haspopup="dialog" aria-controls="rsvp-sheet">
         <span class="ico">✅</span> Reply to RSVP
-      </a>
+      </button>
       <a class="btn btn-guide" style="--i:1" href="../notice-en.html">
         <span class="ico">📋</span> Guest Info
       </a>
@@ -103,6 +103,83 @@
     </section>
 
   </main>
+
+  <!-- RSVP sheet: collects three questions on the main page, no redirect.
+       Submits to same-origin /api/rsvp (Cloudflare Pages Function) which writes
+       into the Feishu "RSVP 管理" table. Identity comes from ?c=<invite code>
+       in the personal link; ?n=<name> is only used for the greeting.
+       ⚠️ GitHub Pages has no Functions, so submits fail there — the sheet falls
+       back to the Feishu form (data-fallback) on the spot.
+       ⚠️ Keep the copy in sync with index.html; the logic lives in rsvp.js. -->
+  <div id="rsvp-sheet" class="sheet" hidden
+       data-api="../api/rsvp"
+       data-fallback="https://my.feishu.cn/share/base/form/shrcnrQ4Bxe6LKebUHs04peSceh"
+       data-hi="Hi {name} ♡"
+       data-hi-anon="Thanks for replying ♡"
+       data-need-attend="Please pick one first"
+       data-need-code="Please enter your invitation code (the two digits in your link)"
+       data-ok-yes="Wonderful — see you there ♡"
+       data-ok-yes-sub="Recorded: {party} guest(s)"
+       data-ok-no="Thanks for letting us know ♡"
+       data-ok-no-sub="Your reply has been recorded"
+       data-err="Couldn't send — please check your connection and try again."
+       data-err-alt="Or reply with the Feishu form →"
+       data-sending="Sending…">
+
+    <div class="sheet-veil" data-rsvp-close></div>
+
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="rsvp-q1">
+      <button type="button" class="sheet-x" data-rsvp-close aria-label="Close">×</button>
+
+      <form id="rsvp-form" novalidate>
+        <p class="sheet-hi" id="rsvp-hi"></p>
+
+        <div class="q" role="radiogroup" aria-labelledby="rsvp-q1">
+          <p class="q-label" id="rsvp-q1">Will you be joining us?</p>
+          <div class="picks">
+            <label class="pick">
+              <input type="radio" name="attend" value="yes">
+              <span>Count me in ♡</span>
+            </label>
+            <label class="pick">
+              <input type="radio" name="attend" value="no">
+              <span>Can't make it</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="q" id="rsvp-party-wrap" role="group" aria-labelledby="rsvp-q2" hidden>
+          <p class="q-label" id="rsvp-q2">How many of you? (including yourself)</p>
+          <div class="stepper">
+            <button type="button" class="step" data-step="-1" aria-label="Fewer">−</button>
+            <output id="rsvp-party">1</output>
+            <button type="button" class="step" data-step="1" aria-label="More">＋</button>
+          </div>
+        </div>
+
+        <div class="q">
+          <p class="q-label" id="rsvp-q3">Any allergies or dietary restrictions?</p>
+          <textarea id="rsvp-allergy" rows="2" maxlength="200"
+                    aria-labelledby="rsvp-q3" placeholder="Leave blank if none"></textarea>
+        </div>
+
+        <div class="q" id="rsvp-code-wrap" hidden>
+          <p class="q-label" id="rsvp-q4">Invitation code</p>
+          <input id="rsvp-code" type="text" inputmode="numeric" maxlength="4"
+                 aria-labelledby="rsvp-q4" placeholder="01">
+        </div>
+
+        <button type="submit" class="sheet-send" id="rsvp-send">Send reply</button>
+        <p class="sheet-note" id="rsvp-note" role="status" aria-live="polite"></p>
+      </form>
+
+      <div class="sheet-done" id="rsvp-done" hidden>
+        <div class="done-mark">♡</div>
+        <p class="done-title" id="rsvp-done-title"></p>
+        <p class="done-sub" id="rsvp-done-sub"></p>
+      </div>
+    </div>
+  </div>
 
   <!-- 右侧翻页圆点（静态写好，JS 只负责切换当前页，避免脚本异常导致导航丢失）
        个数必须与 .page 数一致 -->
@@ -118,5 +195,6 @@
 </div>
 
 <script src="../main.js"></script>
+<script src="../rsvp.js"></script>
 </body>
 </html>

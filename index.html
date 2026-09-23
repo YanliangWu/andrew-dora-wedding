@@ -89,10 +89,10 @@
          改这里必须同步 en/index.html 与 build_paged_preview.py，否则预览图和线上对不上。
          RSVP 从次级金色描边升级为主按钮（原主按钮就是被砍掉的那个），它现在是唯一的正式 CTA。 -->
     <section class="page page-actions">
-      <a class="btn btn-primary" style="--i:0" id="rsvp-btn" target="_blank" rel="noopener"
-         href="https://my.feishu.cn/share/base/form/shrcn5d7sc5fYeMeP18VhxHOYEh">
+      <button type="button" class="btn btn-primary" style="--i:0" id="rsvp-btn"
+              aria-haspopup="dialog" aria-controls="rsvp-sheet">
         <span class="ico">✅</span> 回复出席 RSVP
-      </a>
+      </button>
       <a class="btn btn-guide" style="--i:1" href="notice.html">
         <span class="ico">📋</span> 宾客须知 · 地点 / 流程 / 着装
       </a>
@@ -103,6 +103,84 @@
     </section>
 
   </main>
+
+  <!-- 回复出席面板：在主页里直接收 3 题，不跳转。
+       提交 → 同域 /api/rsvp（Cloudflare Pages Function）→ 飞书「RSVP 管理」表
+       （base KQgabWJAIaV7xKsf6wAcz0frnnc / table tblZNTDaA9g2xpHV）。
+       身份来自专属链接的 ?c=邀请编号；?n=名字 只用来问候，不参与校验。
+       ⚠️ GitHub Pages 那份没有 Function，提交会失败 —— 面板会当场退回飞书表单
+       （data-fallback），所以两个站都能用，只是 GH 站少一步直达。
+       ⚠️ 文案改这里要同步 en/index.html；逻辑共用 rsvp.js，不在这里写死。
+       右下角 data-* 是给 rsvp.js 读的字符串（{名字}/{人数} 是占位符）。 -->
+  <div id="rsvp-sheet" class="sheet" hidden
+       data-api="api/rsvp"
+       data-fallback="https://my.feishu.cn/share/base/form/shrcn5d7sc5fYeMeP18VhxHOYEh"
+       data-hi="你好，{name} ♡"
+       data-hi-anon="谢谢你的回复 ♡"
+       data-need-attend="先告诉我们你来不来哦"
+       data-need-code="请输入你的邀请编号（请柬链接里带的那个两位数字）"
+       data-ok-yes="收到啦，我们等你 ♡"
+       data-ok-yes-sub="已记录：{party} 位"
+       data-ok-no="收到，很遗憾这次见不到你 ♡"
+       data-ok-no-sub="回复已记录，谢谢你告诉我们"
+       data-err="没能发送出去，请检查网络后重试。"
+       data-err-alt="也可以直接用飞书表单回复 →"
+       data-sending="发送中…">
+
+    <div class="sheet-veil" data-rsvp-close></div>
+
+    <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="rsvp-q1">
+      <button type="button" class="sheet-x" data-rsvp-close aria-label="关闭">×</button>
+
+      <form id="rsvp-form" novalidate>
+        <p class="sheet-hi" id="rsvp-hi"></p>
+
+        <div class="q" role="radiogroup" aria-labelledby="rsvp-q1">
+          <p class="q-label" id="rsvp-q1">你会来吗？</p>
+          <div class="picks">
+            <label class="pick">
+              <input type="radio" name="attend" value="yes">
+              <span>一定到 ♡</span>
+            </label>
+            <label class="pick">
+              <input type="radio" name="attend" value="no">
+              <span>这次来不了</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="q" id="rsvp-party-wrap" role="group" aria-labelledby="rsvp-q2" hidden>
+          <p class="q-label" id="rsvp-q2">一共几位？（含你自己）</p>
+          <div class="stepper">
+            <button type="button" class="step" data-step="-1" aria-label="减少">−</button>
+            <output id="rsvp-party">1</output>
+            <button type="button" class="step" data-step="1" aria-label="增加">＋</button>
+          </div>
+        </div>
+
+        <div class="q">
+          <p class="q-label" id="rsvp-q3">有过敏或忌口吗？</p>
+          <textarea id="rsvp-allergy" rows="2" maxlength="200"
+                    aria-labelledby="rsvp-q3" placeholder="没有可以留空"></textarea>
+        </div>
+
+        <div class="q" id="rsvp-code-wrap" hidden>
+          <p class="q-label" id="rsvp-q4">邀请编号</p>
+          <input id="rsvp-code" type="text" inputmode="numeric" maxlength="4"
+                 aria-labelledby="rsvp-q4" placeholder="01">
+        </div>
+
+        <button type="submit" class="sheet-send" id="rsvp-send">发送回复</button>
+        <p class="sheet-note" id="rsvp-note" role="status" aria-live="polite"></p>
+      </form>
+
+      <div class="sheet-done" id="rsvp-done" hidden>
+        <div class="done-mark">♡</div>
+        <p class="done-title" id="rsvp-done-title"></p>
+        <p class="done-sub" id="rsvp-done-sub"></p>
+      </div>
+    </div>
+  </div>
 
   <!-- 右侧翻页圆点（静态写好，JS 只负责切换当前页，避免脚本异常导致导航丢失）
        个数必须与 .page 数一致 -->
@@ -118,5 +196,6 @@
 </div>
 
 <script src="main.js"></script>
+<script src="rsvp.js"></script>
 </body>
 </html>

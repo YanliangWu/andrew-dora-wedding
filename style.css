@@ -400,10 +400,222 @@ body.lang-en #open-btn {
 body.lang-en .btn { letter-spacing: 1px; }
 body.lang-en .thanks { letter-spacing: 1.5px; }
 
+/* ---------- 回复出席面板（主页内嵌，不跳转） ----------
+   ⚠️ 全部选择器都必须挂在 #rsvp-sheet 下：style.css 也被 notice.html /
+   card.html 引用，裸露的 .sheet / .q / .pick 会漏到那两页去。 */
+#rsvp-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 200;                 /* 高于 #cover(100) 与 #dots */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  opacity: 0;
+  transition: opacity .22s ease;
+}
+#rsvp-sheet.on { opacity: 1; }
+#rsvp-sheet[hidden] { display: none; }
+
+#rsvp-sheet .sheet-veil {
+  position: absolute;
+  inset: 0;
+  background: rgba(74, 66, 56, .42);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
+#rsvp-sheet .sheet-card {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  max-height: calc(100dvh - 36px);
+  overflow-y: auto;
+  overscroll-behavior: contain;   /* 面板滚到底时别把底下 #pager 带着滚 */
+  -webkit-overflow-scrolling: touch;
+  padding: 24px 20px 20px;
+  background: var(--paper);
+  border: 1px solid #e2d7c3;
+  border-radius: 20px;
+  box-shadow: 0 18px 46px rgba(60, 48, 30, .3);
+  text-align: center;
+  transform: translateY(14px) scale(.98);
+  transition: transform .26s cubic-bezier(.22,.61,.36,1);
+}
+#rsvp-sheet.on .sheet-card { transform: none; }
+
+#rsvp-sheet .sheet-x {
+  position: absolute;
+  top: 6px; right: 10px;
+  width: 34px; height: 34px;
+  font-size: 22px; line-height: 1;
+  color: #a89a84;
+  background: none; border: 0;
+  cursor: pointer;
+}
+
+#rsvp-sheet .sheet-hi {
+  margin-bottom: 16px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: var(--gold);
+}
+
+#rsvp-sheet .q { margin-bottom: 18px; }
+#rsvp-sheet .q[hidden] { display: none; }
+#rsvp-sheet .q-label {
+  margin-bottom: 9px;
+  font-size: 13.5px;
+  letter-spacing: 1px;
+  color: #6f6552;
+}
+
+/* 二选一：大药丸，选中即红底白字 */
+#rsvp-sheet .picks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#rsvp-sheet .pick { display: block; cursor: pointer; }
+#rsvp-sheet .pick input {
+  position: absolute;
+  width: 1px; height: 1px;
+  opacity: 0;                    /* 视觉隐藏但保留键盘可达 */
+}
+#rsvp-sheet .pick > span {
+  display: block;
+  padding: 13px 0;
+  font-size: 15px;
+  letter-spacing: 1.5px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid #ddd2bd;
+  border-radius: 999px;
+  transition: background .18s ease, color .18s ease, border-color .18s ease;
+}
+#rsvp-sheet .pick input:checked + span {
+  color: #fff;
+  background: var(--accent);
+  border-color: transparent;
+  box-shadow: 0 6px 16px rgba(166, 58, 50, .26);
+}
+#rsvp-sheet .pick input:focus-visible + span {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* 人数步进器 */
+#rsvp-sheet .stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+#rsvp-sheet .step {
+  width: 40px; height: 40px;
+  font-size: 20px; line-height: 1;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid #ddd2bd;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform .15s ease;
+}
+#rsvp-sheet .step:active { transform: scale(.92); }
+#rsvp-sheet .step:disabled { opacity: .35; cursor: default; }
+#rsvp-sheet #rsvp-party {
+  min-width: 48px;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+#rsvp-sheet textarea,
+#rsvp-sheet input[type="text"] {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid #ddd2bd;
+  border-radius: 12px;
+  resize: none;
+}
+#rsvp-sheet input[type="text"] { text-align: center; letter-spacing: 2px; }
+#rsvp-sheet textarea:focus,
+#rsvp-sheet input[type="text"]:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+#rsvp-sheet textarea::placeholder,
+#rsvp-sheet input::placeholder { color: #b6a992; letter-spacing: 0; }
+
+#rsvp-sheet .sheet-send {
+  width: 100%;
+  margin-top: 4px;
+  padding: 14px 0;
+  font: inherit;
+  font-size: 15px;
+  letter-spacing: 3px;
+  text-indent: 3px;
+  color: #fff;
+  background: var(--accent);
+  border: 0;
+  border-radius: 999px;
+  box-shadow: 0 8px 20px rgba(166, 58, 50, .28);
+  cursor: pointer;
+  transition: transform .2s ease, opacity .2s ease;
+}
+#rsvp-sheet .sheet-send:active { transform: scale(.98); }
+#rsvp-sheet .sheet-send:disabled { opacity: .6; cursor: default; }
+
+#rsvp-sheet .sheet-note {
+  margin-top: 10px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: #9a6b4a;
+}
+#rsvp-sheet .sheet-note:empty { display: none; }
+#rsvp-sheet .sheet-note a { color: var(--accent); }
+
+/* 提交成功：整块换成答谢 */
+#rsvp-sheet .sheet-done[hidden],
+#rsvp-sheet #rsvp-form[hidden] { display: none; }
+#rsvp-sheet .sheet-done { padding: 16px 0 6px; }
+#rsvp-sheet .done-mark {
+  font-size: 40px;
+  line-height: 1;
+  color: var(--accent);
+  animation: rsvpPop .5s cubic-bezier(.22,.61,.36,1) both;
+}
+#rsvp-sheet .done-title {
+  margin-top: 14px;
+  font-size: 16px;
+  letter-spacing: 1px;
+  color: var(--ink);
+}
+#rsvp-sheet .done-sub {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #8a8070;
+}
+@keyframes rsvpPop {
+  from { transform: scale(.4); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+
+/* 面板打开时锁住底下的翻页滚动 */
+html.rsvp-open #pager { overflow: hidden; }
+
 /* 尊重"减少动态效果"偏好 */
 @media (prefers-reduced-motion: reduce) {
   .page.in > .page-img,
   .page-actions.in .btn,
   .page-actions.in .thanks { animation: none; }
   #petals { display: none; }
+  #rsvp-sheet,
+  #rsvp-sheet .sheet-card { transition: none; }
+  #rsvp-sheet .done-mark { animation: none; }
 }

@@ -201,7 +201,14 @@ export async function onRequestPost(context) {
     return json({ ok: true, updated: false, party: party, attend: attend });
 
   } catch (err) {
-    // 不把 err 原文全抛给前端（可能带 path），但保留飞书错误码方便定位
+    // 打给 Pages 的函数日志（控制台 → 项目 → Functions 日志，
+    // 或 `wrangler pages deployment tail`）。宾客那头只看到一句人话 +
+    // 飞书表单兜底，具体原因得靠这行，否则出问题只能靠猜。
+    console.error('rsvp 写入失败', {
+      code: code, attend: attend, party: party,
+      message: String(err && err.message || err),
+      feishuCode: err && err.feishuCode
+    });
     return json({
       ok: false,
       error: String(err && err.message || err),

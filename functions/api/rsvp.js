@@ -6,9 +6,16 @@
  *   table tblZNTDaA9g2xpHV
  * 和飞书表单收到的是**同一张表**，所以站内回复与表单回复并排出现，统计不用两处合并。
  *
- * 按「邀请编号」做 upsert：先列出表里记录找同编号的，有就改、没有就建。
- * 这样宾客改主意（来→不来、人数变了）不会在表里留两行。
+ * upsert 的顺序（2026-09-24 起「邀请编号」不再是宾客要填的题）：
+ *   1) 带了编号 → 按编号找；
+ *   2) 编号没命中（或压根没带）→ 按「宾客姓名」找；
+ *   3) 都没命中才新建。
+ * 这样宾客改主意（来→不来、人数变了）不会在表里留两行；链接被转发、宾客从裸域名
+ * 进来（没有 ?c=）时也认得到人，不至于每收到一次回复就多出一行。
  * 表只有几十行，一次 GET（page_size 500）足够，也就不必去猜筛选操作符的方言。
+ *
+ * ⚠️ 姓名匹配只是"没有编号时的兜底"：容忍大小写与空格，**不做拼音/近似匹配** ——
+ *    错并到别人身上的代价，比表里多一行大得多。
  *
  * ── 需要配的东西 ────────────────────────────────────────────────
  * 1) Cloudflare Pages → Settings → Environment variables（Production，加密）：
@@ -66,11 +73,19 @@ function json(body, status) {
 
 function str(v) { return v == null ? '' : String(v); }
 
-/* 邀请编号比较：容忍前导零差异（宾客手输时容易把 01 打成 1） */
+/* 邀请编号比较：容忍前导零差异（编号现在只从链接 ?c= 来，不再手输；留着不亏） */
 function sameCode(a, b) {
   const x = str(a).trim(), y = str(b).trim();
   if (!x || !y) return false;
   return x === y || x.replace(/^0+/, '') === y.replace(/^0+/, '');
+}
+
+/* 姓名比较：只在"没有编号"时用来认领已有记录，所以容忍大小写与空格差异。
+   故意不做拼音/近似/包含匹配 —— 错并到别人身上比多出一行更糟。 */
+function sameName(a, b) {
+  const norm = (s) => str(s).trim().toLowerCase().replace(/\s+/g, '');
+  const x = norm(a), y = norm(b);
+  return Boolean(x) && x === y;
 }
 
 /* 模块级缓存：同一个 isolate 内复用 token。飞书 token 有效期 2 小时，
@@ -122,8 +137,11 @@ function cellText(v) {
   return str(v);
 }
 
-/* 按邀请编号找已有记录，返回 record_id；没有就返回空串 */
-async function findRecordId(env, code) {
+/* 找已有记录，返回 record_id；没有就返回空串。
+   编号优先、姓名兜底，两趟合成一次遍历（表只有几十行，翻页上限 5 页足够）：
+   编号一旦命中就立刻返回（主人侧最精确的键），没命中才退回姓名候选。 */
+async function findRecordId(env, code, guest) {
+  let byName = '';
   let pageToken = '';
   for (let page = 0; page < 5; page++) {
     let qs = `?page_size=500`;
@@ -134,14 +152,16 @@ async function findRecordId(env, code) {
     const items = (data.data && data.data.items) || [];
 
     for (const it of items) {
-      if (sameCode(cellText(it.fields && it.fields[F.invite]), code)) return it.record_id;
+      const f = it.fields || {};
+      if (code && sameCode(cellText(f[F.invite]), code)) return it.record_id;
+      if (!byName && guest && sameName(cellText(f[F.guest]), guest)) byName = it.record_id;
     }
 
     const more = data.data && data.data.has_more;
     pageToken = (data.data && data.data.page_token) || '';
     if (!more || !pageToken) break;
   }
-  return '';
+  return byName;
 }
 
 /* ---------------------------------------------------------------- POST */
@@ -167,7 +187,11 @@ export async function onRequestPost(context) {
   if (!Number.isFinite(party) || party < 0) party = 0;
   if (party > MAX_PARTY) party = MAX_PARTY;
 
-  if (!code) return json({ ok: false, error: '缺少邀请编号' }, 400);
+  /* 编号不再是宾客填的题（2026-09-24 起），只可能来自专属链接的 ?c=；
+     转发链接 / 裸域名进来的就是空 —— 那种情况靠姓名认人，所以两者不能都空。 */
+  if (!code && !guest) {
+    return json({ ok: false, error: '缺少邀请编号和姓名' }, 400);
+  }
   if (code.length > 16) return json({ ok: false, error: '邀请编号过长' }, 400);
   if (attend !== 'yes' && attend !== 'no') {
     return json({ ok: false, error: 'attend 只能是 yes 或 no' }, 400);
@@ -178,7 +202,8 @@ export async function onRequestPost(context) {
   if (!yes) party = 0;
 
   const fields = {};
-  fields[F.invite] = code;
+  // 没带编号就别写这列：留空让主人一眼看出"这行是转发/裸链接进来的"
+  if (code) fields[F.invite] = code;
   fields[F.attend] = yes ? YES : NO;
   fields[F.result] = yes ? RESULT_YES : RESULT_NO;
   fields[F.total] = yes ? party : 0;
@@ -189,7 +214,7 @@ export async function onRequestPost(context) {
   if (allergy) fields[F.allergy] = allergy;
 
   try {
-    const recordId = await findRecordId(env, code);
+    const recordId = await findRecordId(env, code, guest);
 
     if (recordId) {
       await feishu(env, 'PUT',

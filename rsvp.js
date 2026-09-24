@@ -14,6 +14,11 @@
  *
  * ⚠️ 文案不写在这里，全部从 #rsvp-sheet 的 data-* 读（{name} / {party} 是占位符），
  *    这样中英共用一个脚本，改文案只改 HTML。
+ *
+ * ⚠️ 2026-09-24：面板上**不再有「邀请编号」输入框**。那道题只在链接没带 ?c= 时才会
+ *    露出来（转发给别人 / 从裸域名进），而那种情况下宾客根本不知道自己的编号 ——
+ *    问了也白问，还把他挡在提交之外。编号改成**只从专属链接静默读**：有 ?c= 就随
+ *    请求带上（主人侧照样精确对账），没有就不带，服务端按姓名兜底认领。
  */
 (function () {
   'use strict';
@@ -33,8 +38,6 @@
   var partyOut = document.getElementById('rsvp-party');
   var allergy = document.getElementById('rsvp-allergy');
   var nameInput = document.getElementById('rsvp-name');
-  var codeWrap = document.getElementById('rsvp-code-wrap');
-  var codeInput = document.getElementById('rsvp-code');
   if (!form || !sendBtn) return;
 
   var D = sheet.dataset;
@@ -43,15 +46,15 @@
   var KEY = 'andrew-dora-rsvp';
 
   /* ---------------------------------------------------------- 身份
-     专属链接形如 /?c=01&n=张三：c 是邀请编号（真正提交上去的键），
-     n 预填进「你的名字」输入框 —— 但只是**预填**，宾客可以改（改名、写英文名、
+     专属链接形如 /?c=01&n=张三：c 是邀请编号，**不再问宾客**，只从链接静默读 ——
+     有就随请求带上（主人侧按编号精确对账），没有就不带（服务端按姓名兜底认领）。
+     n 预填进「你的名字」输入框，但只是**预填**，宾客可以改（改名、写英文名、
      替家人报名都会发生），提交时以输入框里的值为准。两者都不做校验 ——
      这是婚礼请柬，不是登录系统。 */
   var qs = new URLSearchParams(location.search);
   var code = (qs.get('c') || '').trim();
   var guest = (qs.get('n') || '').trim();
 
-  if (!code) codeWrap.hidden = false;       // 链接被转发/裸域名打开 → 让宾客自己填
   if (guest) nameInput.value = guest;       // 预填，不是只读
 
   /* 问候语跟着名字框走，而不是钉死在链接参数上：宾客把名字改掉以后（或者裸链接
@@ -130,7 +133,7 @@
 
   /* ---------------------------------------------------------- 回填上次的答案
      localStorage 只是体验优化（改主意时不用从头点）。真正的"改回复"靠服务端
-     按邀请编号 upsert，所以清掉本地记录也不会产生重复行。 */
+     按「邀请编号优先、姓名兜底」upsert，所以清掉本地记录也不会产生重复行。 */
   function restore() {
     var saved = null;
     try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (err) {}
@@ -145,7 +148,6 @@
     if (saved.allergy) allergy.value = saved.allergy;
     // 名字框是空的时候才回填：链接带的 ?n= 优先，其次上次自己写的
     if (!nameInput.value.trim() && saved.name) nameInput.value = saved.name;
-    if (!code && saved.code) codeInput.value = saved.code;
     syncHi();
   }
 
@@ -176,7 +178,7 @@
     e.preventDefault();
     if (sending) return;
 
-    // 按题目在屏幕上的顺序校验：名字 → 来不来 → 邀请编号
+    // 按题目在屏幕上的顺序校验：名字 → 来不来（编号已不是题目，只从链接静默读）
     var finalName = nameInput.value.trim();
     if (!finalName) {
       note.textContent = D.needName || '';
@@ -187,15 +189,8 @@
     var attend = picked();
     if (!attend) { note.textContent = D.needAttend || ''; return; }
 
-    var finalCode = code || codeInput.value.trim();
-    if (!finalCode) {
-      note.textContent = D.needCode || '';
-      codeInput.focus();
-      return;
-    }
-
     var payload = {
-      code: finalCode,
+      code: code,               // 专属链接带来的编号；转发/裸域名进来时是空串
       name: finalName,
       attend: attend,
       party: attend === 'yes' ? party() : 0,

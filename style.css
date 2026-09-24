@@ -174,65 +174,74 @@ body {
   object-fit: contain;   /* 整页图完整显示，四周留白与画面纸色同色 */
 }
 
-/* ---------- 首屏：动图独占整屏 ----------
+/* ---------- 首屏：动图 ----------
    2026-09-22：原先视频下方还有一条纸色「新郎 / 新娘」名条，已删除。
    它占掉约 68px 固定高度，把视频挤小；而画面里两个人恰好站在视频最底部，
-   名条紧贴在他们脚下，看着就像把视频压住了。现在 .hero-stage 是唯一子项，
-   视频铺满整屏。视频画面中间本身有手写体 "Andrew & Dora"。 */
+   名条紧贴在他们脚下，看着就像把视频压住了。视频画面中间本身有手写体
+   "Andrew & Dora"。
+
+   ⚠️ 2026-09-24：首屏与内页统一几何（修「视频大图片小」）。
+   病根是两个媒体各自适配：首屏视频是 16:9 竖版（720×1280，比例 .5625）用
+   cover 铺满整屏，内页长图是 860×1810（比例 .4751）用 contain 内缩 ——
+   于是视频占满宽度、图片只占 91%，实测 393×750 差 65px、375×667 差 58px。
+   改法：给 .hero-stage 一个**与页面图同比例**的盒子并居中，
+     · 页面图 contain → 同比例，恰好填满盒子（不裁不缩）
+     · 视频 cover    → 也填满同一个盒子（左右各裁 7.8%）
+   视频比盒子宽（.5625 > .4751）→ 永远是左右裁，不会裁到上下，
+   构图居中所以安全（人物 / 吊灯 / 手写体都完整，见 crop-compare.png）。
+   结果：任何视口下两者的渲染尺寸完全相等 —— 断言见 measure_media.py。 */
 .page-hero {
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;      /* 原来是 stretch：视频铺满整屏 */
   background: var(--paper);
 }
 
 .hero-stage {
   position: relative;
-  flex: 1 1 auto;
-  min-height: 0;        /* flex 子项默认 min-height:auto，不加这行视频会把容器撑破 */
-  width: 100%;
+  flex: 0 0 auto;
+  min-height: 0;              /* flex 子项默认 min-height:auto，不加这行视频会把容器撑破 */
+  aspect-ratio: 860 / 1810;   /* = 页面图比例，见上面说明 */
+  height: 100%;               /* 高度优先：视口比 .4751 宽时由高度定宽 */
+  width: auto;
+  max-width: 100%;            /* 兜底：万一比值判断偏了一像素也不许溢出 */
   overflow: hidden;
 }
+/* 窄高视口（如 iPhone 全屏 390×844，比例 .462）装不下「高度优先」的宽度时
+   改成宽度优先。**必须**保持同一个比例 —— 一旦盒子比例被压回视口比例，
+   两个媒体就又错开了。
+   ⚠️ 这里不能用 width:100% + max-height 的写法（比例会被压掉），
+   只能按视口比例分两个分支，各让一边自然推导。 */
+@media (max-aspect-ratio: 860 / 1810) {
+  .hero-stage {
+    height: auto;
+    width: 100%;
+    max-height: 100%;
+  }
+}
 
-/* 视频是灰调背景，满屏铺满（cover）才不会有米色边框；
-   object-position: center top 是给矮屏兜底：手机比 16:9 高时 cover 只裁两侧，
-   但遇到 16:9 或更矮的屏幕会改裁上下 —— 那时保住顶部（吊灯/花环）比保住地面重要。
-   平板/桌面等较宽的屏幕改回 contain，避免裁掉人物。
-   ⚠️ 画面里两个人站在最底部，「矮屏裁下边」会直接切到人；
-   若日后桌面端反馈人物被截，先把 center top 改成 center。 */
 .hero-video {
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: cover;
-  object-position: center top;
+  object-fit: cover;          /* 填满「纸面」；盒子比自己窄 → 左右各裁 7.8% */
   background: var(--paper);
 }
-/* 宽屏（比例 ≥ 3/4，含手机横屏、平板、桌面）改用 contain，避免裁掉人物。
-   ⚠️ 2026-09-22：手机横屏（852×306，比例 2.78）也命中这里 → 视频缩成 172px 宽居中，
-   两侧露出 340px 纸色（用户报的「iPhone 露底色」就是这个）。
-   但根因不在 contain 本身（只有 contain 才能把人物看全），而在两侧空着没东西垫 ——
-   由下面那条规则用模糊画面补掉。 */
-@media (min-aspect-ratio: 3/4) {
-  .hero-video { object-fit: contain; }
-}
 
-/* 手机横屏（矮而宽）：竖构图的视频没法既铺满又不裁到人，
-   所以用同一帧画面模糊放大铺底（竖屏视频在横屏播放器的常见处理），
-   中间仍是完整的视频。这样横屏也不露纸色，人物也不会被切掉。 */
+/* 手机横屏（矮而宽）：竖构图画面在横屏里只能占中间一条，
+   两侧用同一帧画面模糊放大垫底（竖屏视频在横屏播放器的常见处理），免露纸色。
+   ⚠️ 2026-09-24：垫底层从 .hero-stage 提到**整页** —— 盒子现在就是那一条，
+   垫在盒子里等于被视频盖住了，露出来的两侧仍是纸色（等于没垫）。 */
 @media (orientation: landscape) and (max-height: 560px) {
-  .hero-stage::before {
+  .page-hero::before {
     content: "";
     position: absolute;
-    inset: -8%;                      /* 外扩一点，避免模糊边缘透出底色 */
+    inset: 0;
     background: url("assets/hero-poster.jpg") center/cover no-repeat;
     filter: blur(26px);
   }
-  .hero-video {
-    position: relative;
-    z-index: 1;
-    background: transparent;         /* 让模糊层从视频两侧透出来 */
-  }
+  .hero-stage { z-index: 1; }
 }
+
 
 /* 翻到本页时内容轻微淡入放大（不依赖 JS 也存在：默认就是完全可见） */
 .page.in > .page-img { animation: pageIn .9s cubic-bezier(.22,.61,.36,1) both; }

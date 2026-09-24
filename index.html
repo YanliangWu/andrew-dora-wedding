@@ -55,8 +55,11 @@
          2026-09-22：删掉了原先压在视频下方的纸色「新郎 / 新娘」名条 ——
          它独立占掉约 68px 高度，把视频挤小；而画面里两个人正好站在视频
          最底部（裙摆贴着下沿），名条紧贴着他们，看着就像把视频压住了。
-         现在视频独占整屏。中文全名（吴彦良 / 魏雪纯）按主人要求不再出现，
-         第一屏的名字由视频画面自带的手写体 "Andrew & Dora" 承担。 -->
+         2026-09-24：视频不再是「独占整屏」，而是和后两屏的页面图**同一个
+         盒子**（见 style.css 的 .hero-stage）—— 视频两侧各裁 7.8% 换得与
+         长图完全等宽等高，否则首屏铺满、内页只有 91% 宽，看着一大小。
+         中文全名（吴彦良 / 魏雪纯）按主人要求不再出现，第一屏的名字由
+         视频画面自带的手写体 "Andrew & Dora" 承担。 -->
     <section class="page page-hero">
       <div class="hero-stage">
         <video class="hero-video" muted loop playsinline preload="auto"
@@ -107,8 +110,11 @@
   <!-- 回复出席面板：在主页里直接收「名字 + 3 题」，不跳转。
        提交 → 同域 /api/rsvp（Cloudflare Pages Function）→ 飞书「RSVP 管理」表
        （base KQgabWJAIaV7xKsf6wAcz0frnnc / table tblZNTDaA9g2xpHV）。
-       身份来自专属链接的 ?c=邀请编号；?n=名字 预填进「你的名字」输入框，
-       宾客可以改（链接被转发、或名单里显示名为空时，就靠他们自己填）。
+       ?n=名字 预填进「你的名字」输入框，宾客可以改。
+       ⚠️ 2026-09-24 起面板上**不再问「邀请编号」**：那道题只在链接没带 ?c= 时才露出来
+       （转发给别人、从裸域名进），而那种情况下宾客根本不知道自己的编号 —— 问了也白问，
+       还会挡住提交。编号改成**只从专属链接静默带上**：有 ?c= 就写进表（主人侧照样精确
+       对账），没有就不写，由服务端按姓名兜底认领（见 functions/api/rsvp.js）。
        ⚠️ GitHub Pages 那份没有 Function，提交会失败 —— 面板会当场退回飞书表单
        （data-fallback），所以两个站都能用，只是 GH 站少一步直达。
        ⚠️ 文案改这里要同步 en/index.html；逻辑共用 rsvp.js，不在这里写死。
@@ -120,7 +126,6 @@
        data-hi-anon="谢谢你的回复 ♡"
        data-need-attend="先告诉我们你来不来哦"
        data-need-name="请写下你的名字 ♡"
-       data-need-code="请输入你的邀请编号（请柬链接里带的那个两位数字）"
        data-ok-yes="收到啦，我们等你 ♡"
        data-ok-yes-sub="已记录：{party} 位"
        data-ok-no="收到，很遗憾这次见不到你 ♡"
@@ -138,7 +143,8 @@
         <p class="sheet-hi" id="rsvp-hi"></p>
 
         <!-- 名字排第一题：专属链接会预填好，宾客只是"看一眼/顺手改"；
-             链接被转发出去（没有 ?n=）时，这里就是他们唯一的报名入口。 -->
+             链接被转发出去（没有 ?n=）时，这里就是他们唯一的报名入口 ——
+             也是**没有编号时服务端唯一的认人依据**，所以是必填。 -->
         <div class="q">
           <p class="q-label" id="rsvp-q0">你的名字</p>
           <input id="rsvp-name" type="text" maxlength="40" autocomplete="name"
@@ -172,12 +178,6 @@
           <p class="q-label" id="rsvp-q3">有过敏或忌口吗？</p>
           <textarea id="rsvp-allergy" rows="2" maxlength="200"
                     aria-labelledby="rsvp-q3" placeholder="没有可以留空"></textarea>
-        </div>
-
-        <div class="q" id="rsvp-code-wrap" hidden>
-          <p class="q-label" id="rsvp-q4">邀请编号</p>
-          <input id="rsvp-code" type="text" inputmode="numeric" maxlength="4"
-                 aria-labelledby="rsvp-q4" placeholder="01">
         </div>
 
         <button type="submit" class="sheet-send" id="rsvp-send">发送回复</button>

@@ -55,8 +55,12 @@
          2026-09-22: the paper-coloured "GROOM / BRIDE · Andrew Wu / Dora Wei" strip
          below the video has been removed — it took a fixed ~68px band, squeezing the
          clip, and since the couple stands at the very bottom of the frame the strip
-         read as if it were covering them. The video now owns the full first screen;
-         the names come from the handwritten "Andrew & Dora" baked into the clip. -->
+         read as if it were covering them.
+         2026-09-24: the clip no longer owns the full screen — it now sits in the
+         SAME box as the page images on the next two screens (see .hero-stage in
+         style.css), cropping 7.8% off each side so that video and artwork render at
+         exactly the same size. Before this they were full-bleed vs 91% wide.
+         The names come from the handwritten "Andrew & Dora" baked into the clip. -->
     <section class="page page-hero">
       <div class="hero-stage">
         <video class="hero-video" muted loop playsinline preload="auto"
@@ -106,9 +110,14 @@
 
   <!-- RSVP sheet: collects name + three questions on the main page, no redirect.
        Submits to same-origin /api/rsvp (Cloudflare Pages Function) which writes
-       into the Feishu "RSVP 管理" table. Identity comes from ?c=<invite code>
-       in the personal link; ?n=<name> is prefilled into the "Your name" field
-       and can be edited (a forwarded link has no ?n=, so guests type it).
+       into the Feishu "RSVP 管理" table. ?n=<name> is prefilled into the
+       "Your name" field and can be edited.
+       ⚠️ Since 2026-09-24 the sheet no longer asks for an invitation code: that
+       question only appeared when the link carried no ?c= (a forwarded link or a
+       bare domain) — exactly when a guest has no idea what their code is — and it
+       blocked submission. The code is now taken silently from the personal link
+       when present (?c=), otherwise omitted and reconciled by name server-side
+       (see functions/api/rsvp.js).
        ⚠️ GitHub Pages has no Functions, so submits fail there — the sheet falls
        back to the Feishu form (data-fallback) on the spot.
        ⚠️ Keep the copy in sync with index.html; the logic lives in rsvp.js. -->
@@ -119,7 +128,6 @@
        data-hi-anon="Thanks for replying ♡"
        data-need-attend="Please pick one first"
        data-need-name="Please write your name ♡"
-       data-need-code="Please enter your invitation code (the two digits in your link)"
        data-ok-yes="Wonderful — see you there ♡"
        data-ok-yes-sub="Recorded: {party} guest(s)"
        data-ok-no="Thanks for letting us know ♡"
@@ -137,7 +145,9 @@
         <p class="sheet-hi" id="rsvp-hi"></p>
 
         <!-- Name comes first: the personal link prefills it, and it's the only
-             way we can identify a guest opening a forwarded link (no ?n=). -->
+             way we can identify a guest opening a forwarded link (no ?n=) — and
+             now also the server's only identity signal when there is no ?c=,
+             which is why it is required. -->
         <div class="q">
           <p class="q-label" id="rsvp-q0">Your name</p>
           <input id="rsvp-name" type="text" maxlength="40" autocomplete="name"
@@ -171,12 +181,6 @@
           <p class="q-label" id="rsvp-q3">Any allergies or dietary restrictions?</p>
           <textarea id="rsvp-allergy" rows="2" maxlength="200"
                     aria-labelledby="rsvp-q3" placeholder="Leave blank if none"></textarea>
-        </div>
-
-        <div class="q" id="rsvp-code-wrap" hidden>
-          <p class="q-label" id="rsvp-q4">Invitation code</p>
-          <input id="rsvp-code" type="text" inputmode="numeric" maxlength="4"
-                 aria-labelledby="rsvp-q4" placeholder="01">
         </div>
 
         <button type="submit" class="sheet-send" id="rsvp-send">Send reply</button>

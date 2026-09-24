@@ -160,7 +160,7 @@ export async function onRequestPost(context) {
 
   const code = str(body.code).trim().slice(0, 16);
   const guest = str(body.name).trim().slice(0, MAX_NAME);
-  const allergy = str(body.allergy).trim().slice(0, MAX_ALLERGY);
+  let allergy = str(body.allergy).trim().slice(0, MAX_ALLERGY);
   const attend = str(body.attend).trim();
   let party = parseInt(body.party, 10);
   if (!Number.isFinite(party) || party < 0) party = 0;
@@ -176,6 +176,10 @@ export async function onRequestPost(context) {
   const yes = attend === 'yes';
   if (yes && party < 1) party = 1;            // 说来但人数为 0 → 按 1 位算
   if (!yes) party = 0;
+  /* 「来不了」时忌口同样没有意义（前端也把那一题收起来了）—— 跟人数归零同一条规则。
+     服务端再兜一次：万一有人用转发链接直接 POST，也别把"不来 + 忌口：不吃辣"
+     这种自相矛盾的状态写进库。 */
+  if (!yes) allergy = '';
 
   const now = Date.now();
   const codeKey = normCode(code);
@@ -214,6 +218,9 @@ export async function onRequestPost(context) {
 
     if (target) {
       /* 改行。过敏留空时保留原值（二次提交空着不该把已收到的忌口抹掉）；
+         ⚠️ 但"来不了"是例外：这时忌口要**清掉**而不是保留 —— 见上面 `if (!yes) allergy = ''`，
+            所以这里用 CASE 把"保留"这条规则限定在 attend=yes 时才生效，
+            否则同一个人从"来"改成"不来"后，库里会留着他的忌口（`?13` = yes?1:0）。
          编号只在"原来没有、这次有"时补上（认领），不覆盖已有的。
          ⚠️ dropCode 时**不许认领** —— 那个编号是原主人的，写上去会撞唯一索引。 */
       const claimCode = (!dropCode && codeKey && !target.code_key) ? codeKey : null;
@@ -227,14 +234,14 @@ export async function onRequestPost(context) {
            attend     = ?5,
            party      = ?6,
            plus       = ?7,
-           allergy    = COALESCE(NULLIF(?8, ''), allergy),
+           allergy    = CASE WHEN ?13 THEN COALESCE(NULLIF(?8, ''), allergy) ELSE NULL END,
            updated_at = ?9,
            source     = ?10,
            ua         = ?11
          WHERE id = ?12`
       ).bind(claimCodeRaw, claimCode, guest, nameKey, attend,
         yes ? party : 0, yes ? Math.max(0, party - 1) : 0,
-        allergy, now, source, ua, target.id).run();
+        allergy, now, source, ua, target.id, yes ? 1 : 0).run();
 
       return json({
         ok: true, updated: true, party: yes ? party : 0, attend: attend,

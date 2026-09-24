@@ -184,7 +184,10 @@
           </div>
         </div>
 
-        <div class="q">
+        <!-- 忌口和"几位"一样，只在"一定到"时才有意义 —— 说"来不了"的人
+             不该被追问吃什么（2026-09-24 主人要求）。两者都由 rsvp.js
+             的 syncAttend() 一起显隐。 -->
+        <div class="q" id="rsvp-allergy-wrap" hidden>
           <p class="q-label" id="rsvp-q3">有过敏或忌口吗？</p>
           <textarea id="rsvp-allergy" rows="2" maxlength="200"
                     aria-labelledby="rsvp-q3" placeholder="没有可以留空"></textarea>

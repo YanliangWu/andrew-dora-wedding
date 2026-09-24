@@ -189,7 +189,9 @@
           </div>
         </div>
 
-        <div class="q">
+        <!-- Same as the party stepper: only relevant when attending. Both are
+             shown/hidden together by syncAttend() in rsvp.js. -->
+        <div class="q" id="rsvp-allergy-wrap" hidden>
           <p class="q-label" id="rsvp-q3">Any allergies or dietary restrictions?</p>
           <textarea id="rsvp-allergy" rows="2" maxlength="200"
                     aria-labelledby="rsvp-q3" placeholder="Leave blank if none"></textarea>

@@ -41,6 +41,7 @@
   var partyWrap = document.getElementById('rsvp-party-wrap');
   var partyOut = document.getElementById('rsvp-party');
   var allergy = document.getElementById('rsvp-allergy');
+  var allergyWrap = document.getElementById('rsvp-allergy-wrap');
   var nameInput = document.getElementById('rsvp-name');
   var offBox = document.getElementById('rsvp-off');
   var offT = document.getElementById('rsvp-off-t');
@@ -97,13 +98,19 @@
     return r ? r.value : '';
   }
 
+  /* 「一共几位」和「有没有忌口」都只在"一定到"时才有意义 ——
+     说来不了的人不该被追问吃什么、要几个位子。
+     ⚠️ 这两题必须**一起**显隐：只改一个就会退回"来不了却还要填忌口"。 */
+  function syncAttend(attend) {
+    var yes = attend === 'yes';
+    partyWrap.hidden = !yes;
+    allergyWrap.hidden = !yes;
+  }
+
   Array.prototype.forEach.call(
     form.querySelectorAll('input[name="attend"]'),
     function (r) {
-      r.addEventListener('change', function () {
-        // 「来不了」时人数没有意义，直接收起这一题
-        partyWrap.hidden = picked() !== 'yes';
-      });
+      r.addEventListener('change', function () { syncAttend(picked()); });
     });
 
   /* ---------------------------------------------------------- 兜底 / 预检
@@ -205,7 +212,7 @@
       var r = form.querySelector('input[name="attend"][value="' + saved.attend + '"]');
       if (r) r.checked = true;
     }
-    partyWrap.hidden = saved.attend !== 'yes';
+    syncAttend(saved.attend);
     setParty(saved.party || 1);
     if (saved.allergy) allergy.value = saved.allergy;
     /* 名字回填的优先级：
@@ -263,7 +270,9 @@
       name: finalName,
       attend: attend,
       party: attend === 'yes' ? party() : 0,
-      allergy: allergy.value.trim()
+      /* 说来不了就别把忌口带上 —— 这一题在那种情况下根本没显示过，
+         带上只会让库里多一条"不来 + 不吃辣"的自相矛盾记录。 */
+      allergy: attend === 'yes' ? allergy.value.trim() : ''
     };
 
     sending = true;

@@ -1,7 +1,9 @@
 /* 主页内嵌的「回复出席」面板 —— 名字 + 3 题（来不来 / 几位 / 过敏忌口），不跳转。
  *
  * 数据流：本页 fetch → 同域 <data-api> → Cloudflare Pages Function
- *         (functions/api/rsvp.js) → 飞书「RSVP 管理」表。
+ *         (functions/api/rsvp.js) → **本项目自带的 Cloudflare D1**（表 rsvp）。
+ *         2026-09-24 之前写的是飞书多维表格，那条路需要「企业自建应用」凭据
+ *         （而绕开它的 webhook 自动化要付费套餐），已换掉。见函数里的长注释。
  *
  * 为什么不直接跳飞书表单了：主人要的是"主页上点一下就能回"，跳转那一步会流失人。
  *
@@ -9,8 +11,10 @@
  *    也可以在 JS 里按 location.pathname 判断，但那样一旦 URL 形态变化（哈希跳页 #p=4
  *    之类）就更容易算错，写死在各自页面里最稳。
  *
- * ⚠️ GitHub Pages 那份没有 Functions → POST 会 404。这不是 bug，前端会当场
- *    退回飞书表单（data-fallback），所以两个站都能用，只是 GH 站多一步。
+ * ⚠️ 后端不在的两种情形都由**预检**兜住（打开面板时先 GET 一下）：
+ *    ① GitHub Pages 那份镜像站没有 Functions；② 线上真出故障。
+ *    预检不通就整块换成飞书表单入口，并把姓名/编号 prefill 过去 ——
+ *    **不让宾客填完三题才发现发不出去**（2026-09-24 有宾客就是这么被坑的）。
  *
  * ⚠️ 文案不写在这里，全部从 #rsvp-sheet 的 data-* 读（{name} / {party} 是占位符），
  *    这样中英共用一个脚本，改文案只改 HTML。
@@ -38,6 +42,10 @@
   var partyOut = document.getElementById('rsvp-party');
   var allergy = document.getElementById('rsvp-allergy');
   var nameInput = document.getElementById('rsvp-name');
+  var offBox = document.getElementById('rsvp-off');
+  var offT = document.getElementById('rsvp-off-t');
+  var offS = document.getElementById('rsvp-off-s');
+  var offA = document.getElementById('rsvp-off-a');
   if (!form || !sendBtn) return;
 
   var D = sheet.dataset;
@@ -98,6 +106,56 @@
       });
     });
 
+  /* ---------------------------------------------------------- 兜底 / 预检
+     后端不在的时候（GitHub Pages 那份镜像站没有 Functions；或者线上出故障），
+     **不能等宾客填完三题才告诉他发不出去** —— 2026-09-24 就是这么坑到人的。
+     所以打开面板时先探一下 GET /api/rsvp：不通就整块换成飞书表单入口。
+
+     顺带把姓名/编号用 prefill_ 带过去：飞书表单的预填参数认的是**题目名**
+     （中英两版题目名不同），所以题目名写在各自页面的 data-fallback-name /
+     data-fallback-code 上。这样兜底进来的回复也认得是谁。 */
+  var backendOk = null;                     // null 未知 / true 通 / false 不通
+
+  function fallbackUrl() {
+    var url = D.fallback || '';
+    if (!url) return '#';
+    var pairs = [];
+    var who = nameInput.value.trim() || guest;
+    if (D.fallbackName && who) pairs.push(['prefill_' + D.fallbackName, who]);
+    if (D.fallbackCode && code) pairs.push(['prefill_' + D.fallbackCode, code]);
+    if (!pairs.length) return url;
+    return url + (url.indexOf('?') < 0 ? '?' : '&') +
+      pairs.map(function (p) {
+        return encodeURIComponent(p[0]) + '=' + encodeURIComponent(p[1]);
+      }).join('&');
+  }
+
+  function showOffline(msg) {
+    offT.textContent = D.offTitle || '';
+    offS.textContent = msg || D.offSub || '';
+    offA.textContent = D.offCta || '';
+    offA.href = fallbackUrl();
+    form.hidden = true;
+    doneBox.hidden = true;
+    offBox.hidden = false;
+  }
+
+  function preflight() {
+    if (backendOk !== null) return;
+    fetch(D.api, { method: 'GET', cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      /* 判据是"这个后端在不在"，不是"它现在好不好"：
+         表还没建（还没人提交过）也算在 —— 第一次提交会自愈建表。 */
+      .then(function (d) {
+        backendOk = Boolean(d && d.store === 'd1' && d.bound !== false);
+        if (!backendOk && !sheet.hidden) showOffline();
+      })
+      .catch(function () {
+        backendOk = false;
+        if (!sheet.hidden) showOffline();
+      });
+  }
+
   /* ---------------------------------------------------------- 开关 */
   var sending = false;
 
@@ -105,6 +163,7 @@
     // 每次都回到"可填"状态：上一轮可能停成功态，或者卡在"发送中"
     form.hidden = false;
     doneBox.hidden = true;
+    offBox.hidden = true;
     sending = false;
     sendBtn.disabled = false;
     sendBtn.textContent = SEND_LABEL;
@@ -114,6 +173,9 @@
     sheet.hidden = false;
     requestAnimationFrame(function () { sheet.classList.add('on'); });
     document.documentElement.classList.add('rsvp-open');
+
+    if (backendOk === false) showOffline();     // 已知不通，直接给表单入口
+    else preflight();
   }
 
   function close() {
@@ -146,8 +208,15 @@
     partyWrap.hidden = saved.attend !== 'yes';
     setParty(saved.party || 1);
     if (saved.allergy) allergy.value = saved.allergy;
-    // 名字框是空的时候才回填：链接带的 ?n= 优先，其次上次自己写的
-    if (!nameInput.value.trim() && saved.name) nameInput.value = saved.name;
+    /* 名字回填的优先级：
+       1) 上次就是从**同一条邀请链接**提交的 → 用他上次写的名字，盖掉链接里的 ?n=。
+          否则会出这种事：宾客第一次把名字写成"张伟 & 李娜"提交，第二次点开自己的
+          链接（?n= 还是"张伟"）再提交 → 服务端按编号找到的是"张伟 & 李娜"那行、
+          姓名对不上，只能当成"别人用转发链接进来"，凭空多出一行没编号的记录。
+       2) 不是同一条链接（或本机没记录）→ 只在框空着时回填 ?n=。 */
+    var sameInvite = saved.code === (code || '');
+    if (sameInvite && saved.name) nameInput.value = saved.name;
+    else if (!nameInput.value.trim() && saved.name) nameInput.value = saved.name;
     syncHi();
   }
 
@@ -167,7 +236,7 @@
     note.textContent = '';
     note.appendChild(document.createTextNode((D.err || '') + ' '));
     var a = document.createElement('a');
-    a.href = D.fallback || '#';
+    a.href = fallbackUrl();       // 带上 prefill_，兜底进来的回复也认得是谁
     a.target = '_blank';
     a.rel = 'noopener';
     a.textContent = D.errAlt || '';

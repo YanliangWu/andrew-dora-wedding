@@ -108,13 +108,18 @@
   </main>
 
   <!-- 回复出席面板：在主页里直接收「名字 + 3 题」，不跳转。
-       提交 → 同域 /api/rsvp（Cloudflare Pages Function）→ 飞书「RSVP 管理」表
-       （base KQgabWJAIaV7xKsf6wAcz0frnnc / table tblZNTDaA9g2xpHV）。
+       提交 → 同域 /api/rsvp（Cloudflare Pages Function）→ **本项目自带的 Cloudflare D1**
+       （binding `DB`，表 rsvp；见 functions/api/rsvp.js）。
+       2026-09-24 从飞书 API 换成 D1：写飞书表要「企业自建应用」的 App ID/Secret
+       （建应用 → 开权限 → **发布版本** → 加协作者，四步漏一步就写不进去），
+       而绕开它的另一条路（表里的 webhook 自动化）**要付费套餐**。
+       D1 是本项目自带的 SQLite，免费额度用不完，POST 不需要任何凭据。
        ?n=名字 预填进「你的名字」输入框，宾客可以改。
        ⚠️ 2026-09-24 起面板上**不再问「邀请编号」**：那道题只在链接没带 ?c= 时才露出来
        （转发给别人、从裸域名进），而那种情况下宾客根本不知道自己的编号 —— 问了也白问，
-       还会挡住提交。编号改成**只从专属链接静默带上**：有 ?c= 就写进表（主人侧照样精确
-       对账），没有就不写，由服务端按姓名兜底认领（见 functions/api/rsvp.js）。
+       还会挡住提交。编号改成**只从专属链接静默带上**：有 ?c= 就写进库（主人侧照样精确
+       对账），没有就不写，由服务端按姓名兜底认领。
+       主人侧查看回复：rsvp-admin.html（要口令，口令由 deploy-cf.sh --setup-d1 生成）。
        ⚠️ GitHub Pages 那份没有 Function，提交会失败 —— 面板会当场退回飞书表单
        （data-fallback），所以两个站都能用，只是 GH 站少一步直达。
        ⚠️ 文案改这里要同步 en/index.html；逻辑共用 rsvp.js，不在这里写死。
@@ -130,8 +135,13 @@
        data-ok-yes-sub="已记录：{party} 位"
        data-ok-no="收到，很遗憾这次见不到你 ♡"
        data-ok-no-sub="回复已记录，谢谢你告诉我们"
-       data-err="没能发送出去，请检查网络后重试。"
-       data-err-alt="也可以直接用飞书表单回复 →"
+       data-err="没能存下你的回复（是我们这边的问题，不是你的网络）。稍后再试一次，或"
+       data-err-alt="直接用飞书表单回复 →"
+       data-fallback-name="你的名字"
+       data-fallback-code="邀请编号"
+       data-off-title="这个页面暂时收不了回复"
+       data-off-sub="刚没能连上我们的服务器。点下面这个按钮，用飞书表单回复也一样 —— 你的名字已经帮你带过去了。"
+       data-off-cta="打开回复表单 →"
        data-sending="发送中…">
 
     <div class="sheet-veil" data-rsvp-close></div>
@@ -183,6 +193,14 @@
         <button type="submit" class="sheet-send" id="rsvp-send">发送回复</button>
         <p class="sheet-note" id="rsvp-note" role="status" aria-live="polite"></p>
       </form>
+
+      <!-- 后端不可用时的替身（打开面板时预检不通就换成这块）：
+           宁可少收一条，也不让宾客填完三题才发现发不出去。 -->
+      <div class="sheet-off" id="rsvp-off" hidden>
+        <p class="sheet-off-t" id="rsvp-off-t"></p>
+        <p class="sheet-off-s" id="rsvp-off-s"></p>
+        <a class="sheet-send" id="rsvp-off-a" href="#" target="_blank" rel="noopener"></a>
+      </div>
 
       <div class="sheet-done" id="rsvp-done" hidden>
         <div class="done-mark">♡</div>

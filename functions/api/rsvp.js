@@ -1,173 +1,155 @@
 /**
- * POST /api/rsvp —— 主页「回复出席」面板的提交端点。
+ * /api/rsvp —— 主页「回复出席」面板的提交端点（存储 = 本项目自带的 Cloudflare D1）。
  *
- * 写进主人那张飞书多维表格「RSVP 管理」：
- *   base  KQgabWJAIaV7xKsf6wAcz0frnnc
- *   table tblZNTDaA9g2xpHV
- * 和飞书表单收到的是**同一张表**，所以站内回复与表单回复并排出现，统计不用两处合并。
+ * ── 为什么不是飞书 ────────────────────────────────────────────────
+ * 写飞书多维表格需要一个「企业自建应用」的身份（App ID / Secret）：要去开放平台
+ * 建应用、开权限、**发布版本**、再把应用加成表格协作者，四步里漏一步就写不进去。
+ * 绕开它的另一条路（表里的「接收到 webhook 时」自动化）**要付费套餐**。
+ * 而 D1 是本项目自带的 SQLite（binding `DB`），免费额度 5GB / 每天 500 万行读、
+ * 10 万行写 —— 48 位宾客的回复量在它面前等于零。没有第三方、没有凭据、没有套餐。
  *
- * upsert 的顺序（2026-09-24 起「邀请编号」不再是宾客要填的题）：
- *   1) 带了编号 → 按编号找；
- *   2) 编号没命中（或压根没带）→ 按「宾客姓名」找；
- *   3) 都没命中才新建。
- * 这样宾客改主意（来→不来、人数变了）不会在表里留两行；链接被转发、宾客从裸域名
- * 进来（没有 ?c=）时也认得到人，不至于每收到一次回复就多出一行。
- * 表只有几十行，一次 GET（page_size 500）足够，也就不必去猜筛选操作符的方言。
+ * ── 数据流 ──────────────────────────────────────────────────────
+ *   主页面板 --POST--> 本函数 --D1--> 表 rsvp
+ *   主人查看：rsvp-admin.html?key=<RSVP_ADMIN_KEY>   （列表 / 筛选 / 导 CSV）
+ *   想回到飞书看：`python3 rsvp_pull.py`（仓库外）把新行推进「RSVP 管理」表，
+ *                用的是你**已登录的飞书身份**，不需要建应用、不需要套餐。
  *
- * ⚠️ 姓名匹配只是"没有编号时的兜底"：容忍大小写与空格，**不做拼音/近似匹配** ——
- *    错并到别人身上的代价，比表里多一行大得多。
+ * ── upsert 顺序（「邀请编号」不是宾客要填的题）─────────────────────
+ *   1) 带了编号（专属链接的 ?c=）→ 按编号找，容忍前导零（01 = 1）
+ *   2) 编号没命中、或压根没带 → 按姓名找（大小写 / 空格不敏感）
+ *   3) 都没命中才新建
+ *   这样宾客改主意（来→不来、人数变了）是**改行**不是**加行**；链接被转发、
+ *   从裸域名进来（没有 ?c=）也认得到人，不至于每收一次回复就多一行。
+ *
+ *   ⚠️ 编号命中的那行**姓名对不上**时（= 专属链接被转给了别人），故意不覆盖原行：
+ *      本次改写成"不带编号"另建一行。宁可多一行，也不能把 A 的回复改成 B 的。
+ *      这是唯一会看起来"重复"的情况，靠编号列留空一眼可辨。
+ *   ⚠️ 姓名匹配只是兜底，故意不做拼音 / 近似匹配 —— 错并到别人身上的代价，
+ *      比多留一行大得多。
  *
  * ── 需要配的东西 ────────────────────────────────────────────────
- * 1) Cloudflare Pages → Settings → Environment variables（Production，加密）：
- *      FEISHU_APP_ID / FEISHU_APP_SECRET
- * 2) 飞书开放平台建一个「企业自建应用」，权限至少开通：
- *      bitable:app   （多维表格的查看与编辑；想更细可以拆成
- *                      bitable:app:read + bitable:app:write）
- *    然后**必须发布一个版本**，不发布权限不生效（这一步最容易漏）。
- * 3) 打开那张多维表格 → 右上角「分享」→ 把应用加为协作者（可编辑）。
- *    只给权限不加协作者，飞书会回 permission denied。
- *
- * GET /api/rsvp —— 自检：凭据能不能换到 token、表能不能读、有多少行。
- * 配好之后先浏览器打开这个地址看一眼，比盲试快。
+ *   Deployment binding : D1 database, 变量名 `DB`   （./deploy-cf.sh --setup-d1 自动建）
+ *   Environment var    : RSVP_ADMIN_KEY（查看/导出用的口令，只影响 GET/DELETE）
+ *   POST 不需要任何配置就能用 —— 这是这次换存储的主要目的。
  */
 
-const BASE = 'KQgabWJAIaV7xKsf6wAcz0frnnc';
-const TABLE = 'tblZNTDaA9g2xpHV';
-
-/* 字段名直接用中文名（飞书 API 两者都收），字段 ID 列在注释里备查。
-   改名时这里要跟着改 —— 用 ID 更抗改名，但可读性差，
-   这张表结构稳定，选可读性。 */
-const F = {
-  invite: '邀请编号',        // fldfhuLFfK  text
-  guest: '宾客姓名',         // flddkaEBNH  text
-  attend: '是否出席',        // fldaHsE5PS  select
-  total: '总人数（含本人）',  // fldDru0q9V  number
-  plus: '陪同人数',          // fldBJqRJUQ  number
-  allergy: '过敏 / 忌口',     // fld9wBbudo  text
-  repliedAt: '回复时间',      // fldmry0o3o  datetime
-  result: 'RSVP 结果'        // fldykau0Rw  select
-};
-
-/* select 的选项名必须与表里一字不差，否则飞书会新建一个选项：
-   ✅ 出席 Attending / ❌ 不出席 Unable to attend
-   已确认出席 / 已确认不出席 */
-const YES = '✅ 出席 Attending';
-const NO = '❌ 不出席 Unable to attend';
-const RESULT_YES = '已确认出席';
-const RESULT_NO = '已确认不出席';
-
-const FEISHU = 'https://open.feishu.cn/open-apis';
 const MAX_PARTY = 8;
+const MAX_NAME = 60;
+const MAX_ALLERGY = 200;
+
+/* 表结构。放在代码里而不是只放在部署脚本里：本地 `wrangler pages dev` 和线上
+   首次提交都能自愈建表，省掉"忘了跑 migrate"这一类问题。DDL 是幂等的。
+
+   ⚠️ 必须**一条一条**执行，不能用 `env.DB.exec(多语句字符串)`：exec 的语句切分
+   在 workerd 里是按换行切的（不是只按分号），多行的 CREATE TABLE 会被腰斩成
+   `CREATE TABLE IF NOT EXISTS rsvp (` 然后报 "incomplete input: SQLITE_ERROR"。 */
+const SCHEMA = [`
+CREATE TABLE IF NOT EXISTS rsvp (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  code       TEXT,              -- 邀请编号原文（专属链接的 ?c=），转发进来为 NULL
+  code_key   TEXT,              -- 归一化编号（去前导零），只用于匹配
+  name       TEXT NOT NULL,     -- 宾客在面板里写的名字
+  name_key   TEXT NOT NULL,     -- 归一化姓名（小写、去空白），只用于匹配
+  attend     TEXT NOT NULL,     -- 'yes' | 'no'
+  party      INTEGER NOT NULL,  -- 总人数（含本人）；不来记 0
+  plus       INTEGER NOT NULL,  -- 陪同人数 = party - 1
+  allergy    TEXT,              -- 过敏 / 忌口；宾客留空则保留上次的值
+  at         INTEGER NOT NULL,  -- 宾客提交时间（毫秒）
+  updated_at INTEGER NOT NULL,  -- 最近一次写入（改主意会变新）
+  source     TEXT,              -- 'zh' | 'en'（从 Referer 推断）
+  ua         TEXT               -- UA 前 120 字，排障用
+);`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS ux_rsvp_code_key
+     ON rsvp(code_key) WHERE code_key IS NOT NULL AND code_key <> '';`,
+  `CREATE INDEX IF NOT EXISTS ix_rsvp_name_key ON rsvp(name_key);`,
+  `CREATE INDEX IF NOT EXISTS ix_rsvp_updated ON rsvp(updated_at);`
+];
 
 /* ---------------------------------------------------------------- 小工具 */
 
-function json(body, status) {
-  return new Response(JSON.stringify(body), {
-    status: status || 200,
-    headers: {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Cache-Control': 'no-store'
-    }
-  });
+function json(body, status, extraHeaders) {
+  const headers = {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'no-store'
+  };
+  if (extraHeaders) for (const k of Object.keys(extraHeaders)) headers[k] = extraHeaders[k];
+  return new Response(JSON.stringify(body), { status: status || 200, headers: headers });
 }
 
 function str(v) { return v == null ? '' : String(v); }
 
-/* 邀请编号比较：容忍前导零差异（编号现在只从链接 ?c= 来，不再手输；留着不亏） */
-function sameCode(a, b) {
-  const x = str(a).trim(), y = str(b).trim();
-  if (!x || !y) return false;
-  return x === y || x.replace(/^0+/, '') === y.replace(/^0+/, '');
+/* 编号归一化：`01` 与 `1` 视为同一个人（专属链接里是补零的两位）。 */
+function normCode(v) {
+  const x = str(v).trim();
+  if (!x) return '';
+  return /^\d+$/.test(x) ? String(Number(x)) : x;
 }
 
-/* 姓名比较：只在"没有编号"时用来认领已有记录，所以容忍大小写与空格差异。
-   故意不做拼音/近似/包含匹配 —— 错并到别人身上比多出一行更糟。 */
-function sameName(a, b) {
-  const norm = (s) => str(s).trim().toLowerCase().replace(/\s+/g, '');
-  const x = norm(a), y = norm(b);
-  return Boolean(x) && x === y;
+/* 姓名归一化：只在"没有编号"时用来认领已有记录，所以容忍大小写与空格差异。 */
+function normName(v) {
+  return str(v).trim().toLowerCase().replace(/[\s\u3000]+/g, '');
 }
 
-/* 模块级缓存：同一个 isolate 内复用 token。飞书 token 有效期 2 小时，
-   提前 60 秒过期，避免边界上刚好用到失效的。 */
-let cached = { token: '', until: 0 };
+/* 口令比较：长度先比、内容逐字符异或，避免按字符提前返回。 */
+function sameSecret(a, b) {
+  const x = str(a), y = str(b);
+  if (!x || x.length !== y.length) return false;
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x.charCodeAt(i) ^ y.charCodeAt(i);
+  return diff === 0;
+}
 
-async function tenantToken(env) {
+/* 极轻量的内存限流：同一个 isolate 内按 IP 计数。对"某个人的浏览器卡住疯狂重试"
+   足够，对分布式攻击无效 —— 这是婚礼请柬，够用了，真实防线是字段长度 + 唯一索引。
+   默认每分钟 30 次：单个宾客根本用不到 2 次，但移动网络的 CGNAT 后面可能
+   同时坐着好几个人，别把正常的第二个人一起挡了。可用 RSVP_RATE_MAX 覆盖
+   （本地测试要连打几十个请求，就得把它调大）。 */
+const HITS = new Map();
+function rateLimited(ip, cap) {
+  if (!ip) return false;
   const now = Date.now();
-  if (cached.token && cached.until > now) return cached.token;
-
-  if (!env.FEISHU_APP_ID || !env.FEISHU_APP_SECRET) {
-    throw new Error('未配置 FEISHU_APP_ID / FEISHU_APP_SECRET');
-  }
-
-  const res = await fetch(`${FEISHU}/auth/v3/tenant_access_token/internal`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    body: JSON.stringify({ app_id: env.FEISHU_APP_ID, app_secret: env.FEISHU_APP_SECRET })
-  });
-  const data = await res.json().catch(function () { return {}; });
-  if (data.code !== 0) throw new Error(`取 token 失败：${data.code} ${data.msg || ''}`);
-  cached = { token: data.tenant_access_token, until: now + (data.expire || 7200) * 1000 - 60000 };
-  return cached.token;
+  const rec = HITS.get(ip);
+  if (!rec || now - rec.t0 > 60000) { HITS.set(ip, { t0: now, n: 1 }); return false; }
+  rec.n += 1;
+  if (HITS.size > 500) HITS.clear();          // 别让它长成内存泄漏
+  return rec.n > cap;
 }
 
-async function feishu(env, method, path, body) {
-  const token = await tenantToken(env);
-  const res = await fetch(`${FEISHU}${path}`, {
-    method: method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json; charset=utf-8'
-    },
-    body: body === undefined ? undefined : JSON.stringify(body)
-  });
-  const data = await res.json().catch(function () { return {}; });
-  if (data.code !== 0) {
-    const err = new Error(
-      `${data.code} ${data.msg || ''} @ ${method} ${path.split('?')[0]}`);
-    err.feishuCode = data.code;
-    throw err;
+let schemaReady = null;
+function ensureSchema(env) {
+  if (!schemaReady) {
+    /* 逐条 prepare().run()：DDL 是幂等的，重复跑没有副作用。
+       失败就重置，下次请求再试（部署顺序错、瞬时故障都能自愈）。 */
+    schemaReady = (async function () {
+      for (const sql of SCHEMA) await env.DB.prepare(sql).run();
+      return true;
+    })().catch(function (err) {
+      schemaReady = null;
+      throw err;
+    });
   }
-  return data;
-}
-
-/* 表里 text 字段两种返回形态都见过：纯字符串，或 [{text:"..."}] 的分段数组 */
-function cellText(v) {
-  if (Array.isArray(v)) return v.map(function (x) { return x && x.text ? x.text : str(x); }).join('');
-  return str(v);
-}
-
-/* 找已有记录，返回 record_id；没有就返回空串。
-   编号优先、姓名兜底，两趟合成一次遍历（表只有几十行，翻页上限 5 页足够）：
-   编号一旦命中就立刻返回（主人侧最精确的键），没命中才退回姓名候选。 */
-async function findRecordId(env, code, guest) {
-  let byName = '';
-  let pageToken = '';
-  for (let page = 0; page < 5; page++) {
-    let qs = `?page_size=500`;
-    if (pageToken) qs += `&page_token=${encodeURIComponent(pageToken)}`;
-
-    const data = await feishu(env, 'GET',
-      `/bitable/v1/apps/${BASE}/tables/${TABLE}/records${qs}`);
-    const items = (data.data && data.data.items) || [];
-
-    for (const it of items) {
-      const f = it.fields || {};
-      if (code && sameCode(cellText(f[F.invite]), code)) return it.record_id;
-      if (!byName && guest && sameName(cellText(f[F.guest]), guest)) byName = it.record_id;
-    }
-
-    const more = data.data && data.data.has_more;
-    pageToken = (data.data && data.data.page_token) || '';
-    if (!more || !pageToken) break;
-  }
-  return byName;
+  return schemaReady;
 }
 
 /* ---------------------------------------------------------------- POST */
 
 export async function onRequestPost(context) {
   const { request, env } = context;
+
+  if (!env.DB) {
+    /* 没绑 D1 → 说清楚，别让宾客看到"请检查网络"这种假线索。 */
+    return json({
+      ok: false,
+      error: 'store_unavailable',
+      hint: 'D1 binding `DB` 未配置，跑一次 ./deploy-cf.sh --setup-d1'
+    }, 503);
+  }
+
+  const ip = request.headers.get('CF-Connecting-IP') || '';
+  const rateCap = parseInt(env.RSVP_RATE_MAX, 10);
+  if (rateLimited(ip, Number.isFinite(rateCap) && rateCap > 0 ? rateCap : 30)) {
+    return json({ ok: false, error: 'too_many_requests' }, 429);
+  }
 
   let body;
   try {
@@ -176,109 +158,243 @@ export async function onRequestPost(context) {
     return json({ ok: false, error: '请求体不是合法 JSON' }, 400);
   }
 
-  const code = str(body.code).trim();
+  const code = str(body.code).trim().slice(0, 16);
+  const guest = str(body.name).trim().slice(0, MAX_NAME);
+  const allergy = str(body.allergy).trim().slice(0, MAX_ALLERGY);
   const attend = str(body.attend).trim();
-  /* name 来自主页那张表单里「你的名字」输入框：专属链接会预填名单上的名字，
-     宾客可以改（写英文名、替家人报名、转发链接后自己填）→ 以这里收到的为准。
-     slice 只是防滥用，前端 maxlength=40，这里留点余量。 */
-  const guest = str(body.name).trim().slice(0, 60);
-  const allergy = str(body.allergy).trim().slice(0, 200);
   let party = parseInt(body.party, 10);
   if (!Number.isFinite(party) || party < 0) party = 0;
   if (party > MAX_PARTY) party = MAX_PARTY;
 
   /* 编号不再是宾客填的题（2026-09-24 起），只可能来自专属链接的 ?c=；
      转发链接 / 裸域名进来的就是空 —— 那种情况靠姓名认人，所以两者不能都空。 */
-  if (!code && !guest) {
-    return json({ ok: false, error: '缺少邀请编号和姓名' }, 400);
-  }
-  if (code.length > 16) return json({ ok: false, error: '邀请编号过长' }, 400);
+  if (!code && !guest) return json({ ok: false, error: '缺少邀请编号和姓名' }, 400);
   if (attend !== 'yes' && attend !== 'no') {
     return json({ ok: false, error: 'attend 只能是 yes 或 no' }, 400);
   }
 
   const yes = attend === 'yes';
-  if (yes && party < 1) party = 1;          // 说来但人数为 0 → 按 1 位算
+  if (yes && party < 1) party = 1;            // 说来但人数为 0 → 按 1 位算
   if (!yes) party = 0;
 
-  const fields = {};
-  // 没带编号就别写这列：留空让主人一眼看出"这行是转发/裸链接进来的"
-  if (code) fields[F.invite] = code;
-  fields[F.attend] = yes ? YES : NO;
-  fields[F.result] = yes ? RESULT_YES : RESULT_NO;
-  fields[F.total] = yes ? party : 0;
-  fields[F.plus] = yes ? Math.max(0, party - 1) : 0;
-  fields[F.repliedAt] = Date.now();          // bitable datetime 收毫秒时间戳
-  if (guest) fields[F.guest] = guest;
-  // 名字/过敏都只在有内容时写：宾客二次提交留空不该把已经收到的抹掉
-  if (allergy) fields[F.allergy] = allergy;
+  const now = Date.now();
+  const codeKey = normCode(code);
+  const nameKey = normName(guest);
+  const referer = request.headers.get('Referer') || '';
+  const source = /\/en\//.test(referer) ? 'en' : 'zh';
+  const ua = str(request.headers.get('User-Agent')).slice(0, 120);
 
   try {
-    const recordId = await findRecordId(env, code, guest);
+    await ensureSchema(env);
 
-    if (recordId) {
-      await feishu(env, 'PUT',
-        `/bitable/v1/apps/${BASE}/tables/${TABLE}/records/${recordId}`,
-        { fields: fields });
-      return json({ ok: true, updated: true, party: party, attend: attend });
+    /* ---- 找已有记录：编号优先 → 姓名兜底（一次查完，别来回打 D1） ---- */
+    let target = null;          // {id, code_key, name_key}
+    let codeOwner = null;       // 编号命中的那行（可能姓名对不上）
+    let dropCode = false;       // 本次是否"故意不写编号"
+
+    if (codeKey) {
+      codeOwner = await env.DB
+        .prepare('SELECT id, code_key, name_key FROM rsvp WHERE code_key = ?1 LIMIT 1')
+        .bind(codeKey).first();
+    }
+    if (codeOwner && nameKey && codeOwner.name_key !== nameKey) {
+      /* 链接被转发给别人了：编号是原主人的。不覆盖原行，本次当"无编号"处理。
+         ⚠️ 这里必须真的把编号丢掉再 INSERT —— 否则会撞 code_key 唯一索引
+            （宁可多留一行，也不能把 A 的回复改成 B 的）。 */
+      dropCode = true;
+    } else {
+      target = codeOwner || null;
     }
 
-    await feishu(env, 'POST',
-      `/bitable/v1/apps/${BASE}/tables/${TABLE}/records`,
-      { fields: fields });
-    return json({ ok: true, updated: false, party: party, attend: attend });
+    if (!target && nameKey) {
+      target = await env.DB
+        .prepare('SELECT id, code_key, name_key FROM rsvp WHERE name_key = ?1 ORDER BY updated_at DESC LIMIT 1')
+        .bind(nameKey).first();
+    }
+
+    if (target) {
+      /* 改行。过敏留空时保留原值（二次提交空着不该把已收到的忌口抹掉）；
+         编号只在"原来没有、这次有"时补上（认领），不覆盖已有的。
+         ⚠️ dropCode 时**不许认领** —— 那个编号是原主人的，写上去会撞唯一索引。 */
+      const claimCode = (!dropCode && codeKey && !target.code_key) ? codeKey : null;
+      const claimCodeRaw = claimCode ? code : null;
+      await env.DB.prepare(
+        `UPDATE rsvp SET
+           code       = COALESCE(?1, code),
+           code_key   = COALESCE(?2, code_key),
+           name       = ?3,
+           name_key   = ?4,
+           attend     = ?5,
+           party      = ?6,
+           plus       = ?7,
+           allergy    = COALESCE(NULLIF(?8, ''), allergy),
+           updated_at = ?9,
+           source     = ?10,
+           ua         = ?11
+         WHERE id = ?12`
+      ).bind(claimCodeRaw, claimCode, guest, nameKey, attend,
+        yes ? party : 0, yes ? Math.max(0, party - 1) : 0,
+        allergy, now, source, ua, target.id).run();
+
+      return json({
+        ok: true, updated: true, party: yes ? party : 0, attend: attend,
+        claimedCode: Boolean(claimCode)
+      });
+    }
+
+    /* ---- 新建 ---- */
+    const insertCode = dropCode ? null : (code || null);
+    const insertCodeKey = dropCode ? null : (codeKey || null);
+    await env.DB.prepare(
+      `INSERT INTO rsvp
+         (code, code_key, name, name_key, attend, party, plus, allergy, at, updated_at, source, ua)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, NULLIF(?8, ''), ?9, ?9, ?10, ?11)`
+    ).bind(insertCode, insertCodeKey, guest, nameKey, attend,
+      yes ? party : 0, yes ? Math.max(0, party - 1) : 0,
+      allergy, now, source, ua).run();
+
+    return json({
+      ok: true, updated: false, party: yes ? party : 0, attend: attend,
+      codeLess: !insertCodeKey,
+      forwarded: dropCode || undefined      // 说明"这行的编号被摘掉了，因为链接不是他的"
+    });
 
   } catch (err) {
-    // 打给 Pages 的函数日志（控制台 → 项目 → Functions 日志，
-    // 或 `wrangler pages deployment tail`）。宾客那头只看到一句人话 +
-    // 飞书表单兜底，具体原因得靠这行，否则出问题只能靠猜。
+    /* 打给 Pages 的 Functions 日志（控制台 → 项目 → 函数日志，
+       或 `wrangler pages deployment tail`）。宾客那头只看到一句人话 + 兜底链接，
+       具体原因得靠这行，否则出问题只能靠猜。 */
     console.error('rsvp 写入失败', {
       code: code, attend: attend, party: party,
-      message: String(err && err.message || err),
-      feishuCode: err && err.feishuCode
+      message: String(err && err.message || err)
     });
     return json({
       ok: false,
-      error: String(err && err.message || err),
-      code: err && err.feishuCode
-    }, 502);
+      error: 'store_failed',
+      detail: String(err && err.message || err)
+    }, 500);
   }
 }
 
-/* ---------------------------------------------------------------- GET 自检
-   配好环境变量后直接浏览器打开 /api/rsvp：能换到 token、能读表、有多少行。
-   不会回显任何密钥。 */
+/* ---------------------------------------------------------------- GET
+   · 不带 key  → 健康检查（有没有绑 DB、表建好没、收了多少条）
+   · 带 key    → 数据。?format=csv 导出，?since=<ms> 只取增量（喂给同步脚本）
+   健康检查不泄露任何回复内容；数据接口要口令，口令没配就直接拒绝。 */
+
+function csvCell(v) {
+  const s = str(v);
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function toCsv(rows) {
+  const head = ['邀请编号', '宾客姓名', '是否出席', '总人数（含本人）', '陪同人数',
+    '过敏 / 忌口', '回复时间', '最近更新', '来源'];
+  const lines = [head.join(',')];
+  for (const r of rows) {
+    lines.push([
+      r.code ? String(r.code).padStart(2, '0') : '',
+      r.name,
+      r.attend === 'yes' ? '出席' : '不出席',
+      r.party,
+      r.plus,
+      r.allergy || '',
+      new Date(r.at).toISOString(),
+      new Date(r.updated_at).toISOString(),
+      r.source || ''
+    ].map(csvCell).join(','));
+  }
+  /* BOM：否则 Excel 打开中文是乱码 */
+  return '\uFEFF' + lines.join('\r\n') + '\r\n';
+}
+
 export async function onRequestGet(context) {
-  const { env } = context;
-  const out = {
-    ok: true,
-    hasCredentials: Boolean(env.FEISHU_APP_ID && env.FEISHU_APP_SECRET),
-    token: false,
-    readTable: false,
-    base: BASE,
-    table: TABLE
-  };
+  const { request, env } = context;
+  const url = new URL(request.url);
+  const key = url.searchParams.get('key') || '';
 
-  try {
-    await tenantToken(env);
-    out.token = true;
-  } catch (err) {
-    out.ok = false;
-    out.tokenError = String(err && err.message || err);
-    return json(out, 502);
+  if (!env.DB) {
+    return json({
+      ok: false, store: 'd1', bound: false,
+      hint: 'D1 binding `DB` 未配置，跑一次 ./deploy-cf.sh --setup-d1'
+    }, 503);
+  }
+
+  const admin = Boolean(env.RSVP_ADMIN_KEY) && sameSecret(key, env.RSVP_ADMIN_KEY);
+
+  if (!admin) {
+    /* 健康检查：只回统计，不回内容。
+       ⚠️ 「表还不存在」**不是故障** —— 表会在第一次 POST 时自愈建出来。
+       早先这里把它当成 ok:false，结果刚配好的站点在第一个宾客提交之前，
+       前端预检会误判成"后端坏了"，把人直接推到飞书表单去。
+       所以 ok 只表示"后端在"，表有没有单独用 table 字段说。 */
+    const out = { ok: true, store: 'd1', bound: true, admin: false, table: true };
+    try {
+      const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM rsvp').first();
+      out.total = (row && row.n) || 0;
+    } catch (err) {
+      out.table = false;
+      out.total = 0;
+    }
+    return json(out);
   }
 
   try {
-    const data = await feishu(env, 'GET',
-      `/bitable/v1/apps/${BASE}/tables/${TABLE}/records?page_size=1`);
-    out.readTable = true;
-    out.total = data.data && data.data.total;
+    const since = parseInt(url.searchParams.get('since'), 10);
+    const sql = Number.isFinite(since) && since > 0
+      ? 'SELECT * FROM rsvp WHERE updated_at > ?1 ORDER BY updated_at ASC'
+      : 'SELECT * FROM rsvp ORDER BY (code IS NULL), CAST(code AS INTEGER), updated_at DESC';
+    const stmt = env.DB.prepare(sql);
+    const res = Number.isFinite(since) && since > 0
+      ? await stmt.bind(since).all()
+      : await stmt.all();
+    const rows = (res && res.results) || [];
+
+    if ((url.searchParams.get('format') || '') === 'csv') {
+      return new Response(toCsv(rows), {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/csv; charset=utf-8',
+          'Content-Disposition': 'attachment; filename="rsvp.csv"',
+          'Cache-Control': 'no-store'
+        }
+      });
+    }
+
+    return json({ ok: true, admin: true, count: rows.length, rows: rows });
   } catch (err) {
-    out.ok = false;
-    out.readError = String(err && err.message || err);
-    out.hint = '多半是应用没被加进这张表的协作者，或 bitable 权限没发布';
-    return json(out, 502);
+    const msg = String(err && err.message || err);
+    /* 还没人提交过 → 表还不存在。这不是错误，给空列表就行，
+       否则主人第一次打开后台页会先看到一片红。 */
+    if (/no such table/i.test(msg)) {
+      if ((url.searchParams.get('format') || '') === 'csv') {
+        return new Response(toCsv([]), {
+          status: 200,
+          headers: {
+            'Content-Type': 'text/csv; charset=utf-8',
+            'Content-Disposition': 'attachment; filename="rsvp.csv"',
+            'Cache-Control': 'no-store'
+          }
+        });
+      }
+      return json({ ok: true, admin: true, count: 0, rows: [], note: '还没有人回复' });
+    }
+    return json({ ok: false, error: msg }, 500);
+  }
+}
+
+/* ---------------------------------------------------------------- DELETE
+   删掉一条（比如自己测试留下的）。需要口令；/api/* 已由 _routes.json 放行。 */
+export async function onRequestDelete(context) {
+  const { request, env } = context;
+  const url = new URL(request.url);
+
+  if (!env.DB) return json({ ok: false, error: 'store_unavailable' }, 503);
+  if (!env.RSVP_ADMIN_KEY || !sameSecret(url.searchParams.get('key') || '', env.RSVP_ADMIN_KEY)) {
+    return json({ ok: false, error: 'unauthorized' }, 401);
   }
 
-  return json(out);
+  const id = parseInt(url.searchParams.get('id'), 10);
+  if (!Number.isFinite(id) || id <= 0) return json({ ok: false, error: '缺少 id' }, 400);
+
+  const res = await env.DB.prepare('DELETE FROM rsvp WHERE id = ?1').bind(id).run();
+  return json({ ok: true, deleted: (res.meta && res.meta.changes) || 0 });
 }

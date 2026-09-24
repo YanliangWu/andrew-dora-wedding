@@ -109,15 +109,22 @@
   </main>
 
   <!-- RSVP sheet: collects name + three questions on the main page, no redirect.
-       Submits to same-origin /api/rsvp (Cloudflare Pages Function) which writes
-       into the Feishu "RSVP 管理" table. ?n=<name> is prefilled into the
-       "Your name" field and can be edited.
+       Submits to same-origin /api/rsvp (Cloudflare Pages Function) which writes into
+       **this project's own Cloudflare D1** (binding `DB`, table `rsvp`; see
+       functions/api/rsvp.js). Switched from the Feishu API on 2026-09-24: writing
+       that table needs a Feishu custom app (create app → grant bitable:app →
+       **publish a version** → add the app as a Base collaborator), and the way
+       around it (the Base "webhook received" automation) **needs a paid plan**.
+       D1 is a SQLite that ships with this project — generous free tier, no
+       credentials needed for POST. ?n=<name> is prefilled into the "Your name"
+       field and can be edited.
+       Owner view: rsvp-admin.html (needs the admin key printed by
+       `deploy-cf.sh --setup-d1`).
        ⚠️ Since 2026-09-24 the sheet no longer asks for an invitation code: that
        question only appeared when the link carried no ?c= (a forwarded link or a
        bare domain) — exactly when a guest has no idea what their code is — and it
        blocked submission. The code is now taken silently from the personal link
-       when present (?c=), otherwise omitted and reconciled by name server-side
-       (see functions/api/rsvp.js).
+       when present (?c=), otherwise omitted and reconciled by name server-side.
        ⚠️ GitHub Pages has no Functions, so submits fail there — the sheet falls
        back to the Feishu form (data-fallback) on the spot.
        ⚠️ Keep the copy in sync with index.html; the logic lives in rsvp.js. -->
@@ -132,8 +139,13 @@
        data-ok-yes-sub="Recorded: {party} guest(s)"
        data-ok-no="Thanks for letting us know ♡"
        data-ok-no-sub="Your reply has been recorded"
-       data-err="Couldn't send — please check your connection and try again."
-       data-err-alt="Or reply with the Feishu form →"
+       data-err="We couldn't save your reply — that's on our side, not your connection. Please try again in a moment, or"
+       data-err-alt="use the Feishu form instead →"
+       data-fallback-name="Your name"
+       data-fallback-code="Invitation code"
+       data-off-title="This page can't collect replies right now"
+       data-off-sub="We couldn't reach our server just now. The button below opens the Feishu form instead — your name is already filled in."
+       data-off-cta="Open the form →"
        data-sending="Sending…">
 
     <div class="sheet-veil" data-rsvp-close></div>
@@ -186,6 +198,15 @@
         <button type="submit" class="sheet-send" id="rsvp-send">Send reply</button>
         <p class="sheet-note" id="rsvp-note" role="status" aria-live="polite"></p>
       </form>
+
+      <!-- Swap-in used when the preflight check finds no backend (the GitHub Pages
+           mirror has no Functions): never let a guest fill three answers and only
+           then discover the send fails. -->
+      <div class="sheet-off" id="rsvp-off" hidden>
+        <p class="sheet-off-t" id="rsvp-off-t"></p>
+        <p class="sheet-off-s" id="rsvp-off-s"></p>
+        <a class="sheet-send" id="rsvp-off-a" href="#" target="_blank" rel="noopener"></a>
+      </div>
 
       <div class="sheet-done" id="rsvp-done" hidden>
         <div class="done-mark">♡</div>

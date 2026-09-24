@@ -597,6 +597,28 @@ body.lang-en .thanks { letter-spacing: 1.5px; }
 #rsvp-sheet .sheet-note:empty { display: none; }
 #rsvp-sheet .sheet-note a { color: var(--accent); }
 
+/* 后端不可用时替换进来的一块（见 rsvp.js 的预检）：说清原因 + 一个飞书表单入口。
+   这里把 <a> 复用 .sheet-send 的按钮外观，所以补上行内元素需要的那几行。 */
+#rsvp-sheet .sheet-off[hidden] { display: none; }
+#rsvp-sheet .sheet-off { padding: 6px 0 2px; }
+#rsvp-sheet .sheet-off-t {
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: var(--ink);
+}
+#rsvp-sheet .sheet-off-s {
+  margin-top: 9px;
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: #8c7c66;
+}
+#rsvp-sheet a.sheet-send {
+  display: block;
+  margin-top: 18px;
+  text-align: center;
+  text-decoration: none;
+}
+
 /* 提交成功：整块换成答谢 */
 #rsvp-sheet .sheet-done[hidden],
 #rsvp-sheet #rsvp-form[hidden] { display: none; }

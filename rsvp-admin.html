@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#f0eadf">
+<title>回复出席 · 后台</title>
+<!-- =========================================================================
+     主人侧查看页：读 /api/rsvp（要口令），不看回复内容以外的任何东西。
+     没有导航入口 —— 只有拿到这条地址 + 口令的人能进来。
+
+     为什么要这个页：回复现在落在本项目自带的 Cloudflare D1 里（不再依赖飞书）。
+     日常就打开这一页看；要导给别人（酒店、宴席安排）点「导 CSV」。
+
+     口令存在 localStorage，不进 URL（避免被分享出去时连带泄漏）。
+     地址形如 https://andrew-dora-wedding.pages.dev/rsvp-admin.html
+     ========================================================================= -->
+<style>
+  :root {
+    --paper: #f0eadf;
+    --paper-deep: #e8e0d1;
+    --ink: #4a4238;
+    --muted: #8c7c66;
+    --accent: #a63a32;
+    --gold: #c9a25e;
+    --line: #ddd2bf;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--paper); color: var(--ink); min-height: 100vh;
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 22px 16px 56px;
+  }
+  .wrap { max-width: 620px; margin: 0 auto; }
+
+  h1 { font-size: 20px; font-weight: 600; letter-spacing: .04em; }
+  h1 small { display: block; margin-top: 5px; font-size: 12px; font-weight: 400;
+             color: var(--muted); letter-spacing: .06em; }
+
+  /* ---------------- 口令闸门 ---------------- */
+  .gate { margin-top: 28px; padding: 22px 20px; background: #fff;
+          border: 1px solid var(--line); border-radius: 14px; }
+  .gate p { font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .gate code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+               font-size: 12px; background: var(--paper-deep); padding: 1px 5px;
+               border-radius: 4px; word-break: break-all; }
+  .field { display: flex; gap: 8px; margin-top: 14px; }
+  input[type=password], input[type=text] {
+    flex: 1 1 auto; min-width: 0; padding: 11px 13px; font-size: 15px;
+    color: var(--ink); background: var(--paper);
+    border: 1px solid var(--line); border-radius: 10px;
+    font-family: inherit;
+  }
+  input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+  button {
+    font-family: inherit; font-size: 14px; cursor: pointer;
+    padding: 11px 16px; border-radius: 10px; border: 1px solid var(--line);
+    background: #fff; color: var(--ink); transition: opacity .15s;
+  }
+  button:active { opacity: .6; }
+  button.primary { background: var(--accent); border-color: var(--accent);
+                   color: #fff; font-weight: 500; }
+  button:disabled { opacity: .45; cursor: default; }
+
+  /* ---------------- 概览 ---------------- */
+  .stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .stat { flex: 1 1 66px; min-width: 0; padding: 11px 12px; background: #fff;
+          border: 1px solid var(--line); border-radius: 12px; }
+  .stat b { display: block; font-size: 20px; font-weight: 600; line-height: 1.3; }
+  .stat span { font-size: 11px; color: var(--muted); letter-spacing: .02em;
+               white-space: nowrap; }
+  .stat.yes b { color: var(--accent); }
+
+  /* ---------------- 工具条 ---------------- */
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+         margin-top: 18px; }
+  .tabs { display: flex; gap: 4px; background: var(--paper-deep);
+          padding: 4px; border-radius: 11px; }
+  .tabs button { border: 0; background: transparent; padding: 8px 12px;
+                 border-radius: 8px; font-size: 13px; color: var(--muted); }
+  .tabs button[aria-pressed=true] { background: #fff; color: var(--ink);
+                                    font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .bar .spacer { flex: 1 1 auto; }
+
+  /* ---------------- 列表 ---------------- */
+  ul { list-style: none; margin-top: 14px; }
+  li { display: flex; gap: 12px; align-items: flex-start; padding: 14px 15px;
+       background: #fff; border: 1px solid var(--line); border-radius: 12px;
+       margin-bottom: 8px; }
+  .badge { flex: 0 0 auto; min-width: 40px; text-align: center; padding: 3px 7px;
+           font-size: 12px; font-variant-numeric: tabular-nums; border-radius: 7px;
+           background: var(--paper-deep); color: var(--muted); }
+  .badge.none { font-style: italic; font-size: 11px; }
+  .body { flex: 1 1 auto; min-width: 0; }
+  .who { font-size: 15px; font-weight: 600; word-break: break-word; }
+  .meta { margin-top: 5px; font-size: 12px; color: var(--muted); line-height: 1.65; }
+  .meta em { font-style: normal; color: var(--ink); }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 20px;
+         font-size: 11px; font-weight: 500; letter-spacing: .04em; }
+  .tag.yes { background: rgba(166,58,50,.1); color: var(--accent); }
+  .tag.no { background: var(--paper-deep); color: var(--muted); }
+  .del { flex: 0 0 auto; border: 0; background: transparent; color: #bdb0a0;
+         font-size: 17px; line-height: 1; padding: 4px 2px; }
+  .del:hover { color: var(--accent); }
+
+  .empty { margin-top: 22px; padding: 26px 20px; text-align: center;
+           font-size: 13px; color: var(--muted); background: #fff;
+           border: 1px dashed var(--line); border-radius: 12px; line-height: 1.8; }
+  .empty.err { border-color: rgba(166,58,50,.35); color: var(--accent); }
+
+  footer { margin-top: 30px; font-size: 11px; color: #b6a992; line-height: 1.9;
+           text-align: center; }
+  .hint { margin-top: 12px; font-size: 12px; color: var(--muted); }
+  #toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
+           padding: 10px 18px; border-radius: 22px; background: var(--ink);
+           color: var(--paper); font-size: 13px; opacity: 0; pointer-events: none;
+           transition: opacity .2s; }
+  #toast.on { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>回复出席 · RSVP<small>只有你（拿到口令的人）能看到这一页</small></h1>
+
+  <!-- 口令闸门：没配口令 / 口令不对都停在这里 -->
+  <section class="gate" id="gate" hidden>
+    <p id="gate-msg">粘贴查看口令。它由 <code>./deploy-cf.sh --setup-d1</code> 生成，
+      也保存在你本机的 <code>~/.workbuddy/secrets/rsvp-admin.key</code>；填过一次就记住了。</p>
+    <div class="field">
+      <input id="key" type="password" autocomplete="off" placeholder="查看口令"
+             aria-label="查看口令">
+      <button class="primary" id="enter">查看</button>
+    </div>
+    <p class="hint" id="gate-hint" hidden></p>
+  </section>
+
+  <section id="panel" hidden>
+    <div class="stats">
+      <div class="stat"><b id="s-all">–</b><span>回复条数</span></div>
+      <div class="stat yes"><b id="s-yes">–</b><span>出席</span></div>
+      <div class="stat"><b id="s-no">–</b><span>不来</span></div>
+      <div class="stat"><b id="s-head">–</b><span>合计人数</span></div>
+    </div>
+
+    <div class="bar">
+      <div class="tabs" role="group" aria-label="筛选">
+        <button data-f="all" aria-pressed="true">全部</button>
+        <button data-f="yes" aria-pressed="false">出席</button>
+        <button data-f="no" aria-pressed="false">不来</button>
+        <button data-f="nocode" aria-pressed="false">无编号</button>
+      </div>
+      <span class="spacer"></span>
+      <button id="refresh">刷新</button>
+      <button id="csv">导 CSV</button>
+      <button id="copy">复制出席名单</button>
+    </div>
+
+    <ul id="list"></ul>
+    <div class="empty" id="empty" hidden></div>
+
+    <footer>
+      提交时间来自宾客手机·服务器时钟；「无编号」= 从转发链接或裸域名进来，靠姓名认领。<br>
+      这一页不写入任何数据（除删除某条）。
+      <div class="hint"><a href="#" id="forget">清除本机记住的口令</a></div>
+    </footer>
+  </section>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var API = 'api/rsvp';                 // 同目录下的 Function（本页在站点根）
+  var STORE = 'andrew-dora-rsvp-key';   // 口令只存本机
+
+  var el = function (id) { return document.getElementById(id); };
+  var gate = el('gate'), panel = el('panel'), list = el('list'), empty = el('empty');
+  var keyInput = el('key'), gateHint = el('gate-hint'), gateMsg = el('gate-msg');
+
+  var rows = [];
+  var filter = 'all';
+  var key = '';
+
+  function toast(msg) {
+    var t = el('toast');
+    t.textContent = msg;
+    t.classList.add('on');
+    clearTimeout(toast.t);
+    toast.t = setTimeout(function () { t.classList.remove('on'); }, 1900);
+  }
+
+  function pad2(c) {
+    var s = String(c == null ? '' : c);
+    return /^\d+$/.test(s) ? (s.length < 2 ? '0' + s : s) : s;
+  }
+
+  function when(ms) {
+    if (!ms) return '';
+    var d = new Date(ms);
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  function showGate(msg) {
+    gate.hidden = false;
+    panel.hidden = true;
+    gateMsg.innerHTML = msg;
+  }
+
+  function visible() {
+    return rows.filter(function (r) {
+      if (filter === 'all') return true;
+      if (filter === 'yes') return r.attend === 'yes';
+      if (filter === 'no') return r.attend === 'no';
+      if (filter === 'nocode') return !r.code;
+      return true;
+    });
+  }
+
+  function render() {
+    var shown = visible();
+    var yes = rows.filter(function (r) { return r.attend === 'yes'; });
+    var no = rows.filter(function (r) { return r.attend === 'no'; });
+    var heads = yes.reduce(function (n, r) { return n + (r.party || 1); }, 0);
+
+    el('s-all').textContent = rows.length;
+    el('s-yes').textContent = yes.length;
+    el('s-no').textContent = no.length;
+    el('s-head').textContent = heads;
+
+    list.innerHTML = '';
+    shown.forEach(function (r) {
+      var li = document.createElement('li');
+
+      var b = document.createElement('span');
+      b.className = 'badge' + (r.code ? '' : ' none');
+      b.textContent = r.code ? pad2(r.code) : '转发';
+      if (!r.code) b.title = '这条没有编号：从转发链接或裸域名进来，靠姓名认领';
+      li.appendChild(b);
+
+      var box = document.createElement('div');
+      box.className = 'body';
+
+      var who = document.createElement('div');
+      who.className = 'who';
+      who.textContent = r.name || '(没写名字)';
+      box.appendChild(who);
+
+      var meta = document.createElement('div');
+      meta.className = 'meta';
+
+      var tag = document.createElement('span');
+      tag.className = 'tag ' + (r.attend === 'yes' ? 'yes' : 'no');
+      tag.textContent = r.attend === 'yes' ? '出席 · ' + (r.party || 1) + ' 位' : '不来';
+      meta.appendChild(tag);
+
+      if (r.allergy) {
+        meta.appendChild(document.createTextNode(' '));
+        var em = document.createElement('em');
+        em.textContent = '忌口：' + r.allergy;
+        meta.appendChild(em);
+      }
+      meta.appendChild(document.createElement('br'));
+      meta.appendChild(document.createTextNode(when(r.updated_at)));
+      if (r.updated_at && r.at && Math.abs(r.updated_at - r.at) > 60000) {
+        meta.appendChild(document.createTextNode('（改过）'));
+      }
+      if (r.source === 'en') meta.appendChild(document.createTextNode(' · 英文页'));
+      box.appendChild(meta);
+
+      li.appendChild(box);
+
+      var del = document.createElement('button');
+      del.className = 'del';
+      del.type = 'button';
+      del.textContent = '×';
+      del.title = '删除这一条';
+      del.addEventListener('click', function () { remove(r); });
+      li.appendChild(del);
+
+      list.appendChild(li);
+    });
+
+    empty.hidden = shown.length > 0;
+    if (!shown.length) {
+      empty.className = 'empty';
+      empty.textContent = rows.length
+        ? '这个筛选下没有回复。'
+        : '还没有人回复。宾客在请柬最后一页点「回复出席」提交后，这里就会出现。';
+    }
+  }
+
+  function load() {
+    return fetch(API + '?key=' + encodeURIComponent(key), { cache: 'no-store' })
+      .then(function (res) { return res.json().then(function (d) { return { s: res.status, d: d }; }); })
+      .then(function (r) {
+        if (r.s === 401 || !r.d || r.d.admin !== true) {
+          var why = (r.d && (r.d.error || r.d.note)) || '';
+          showGate('口令不对' + (why ? '，或服务端还没配好（' + why + '）' : '') +
+            '。口令由 <code>./deploy-cf.sh --setup-d1</code> 生成，' +
+            '存在本机 <code>~/.workbuddy/secrets/rsvp-admin.key</code>。');
+          return false;
+        }
+        rows = r.d.rows || [];
+        gate.hidden = true;
+        panel.hidden = false;
+        try { localStorage.setItem(STORE, key); } catch (e) {}
+        render();
+        return true;
+      })
+      .catch(function (err) {
+        showGate('读不到回复：' + err.message +
+          '<br>如果这是 GitHub Pages 那份站点，它没有后端 —— 请用 pages.dev 那个地址打开本页。');
+        return false;
+      });
+  }
+
+  function remove(r) {
+    if (!confirm('删除「' + r.name + '」这条回复？删了就没了（宾客再提交会重新建一条）。')) return;
+    fetch(API + '?key=' + encodeURIComponent(key) + '&id=' + r.id, { method: 'DELETE' })
+      .then(function (res) { return res.json(); })
+      .then(function (d) {
+        if (!d || !d.ok) throw new Error((d && d.error) || '删除失败');
+        rows = rows.filter(function (x) { return x.id !== r.id; });
+        render();
+        toast('已删除');
+      })
+      .catch(function (err) { toast('删除失败：' + err.message); });
+  }
+
+  el('enter').addEventListener('click', function () {
+    key = keyInput.value.trim();
+    if (!key) { gateHint.hidden = false; gateHint.textContent = '先粘贴口令。'; return; }
+    el('enter').disabled = true;
+    load().then(function () { el('enter').disabled = false; });
+  });
+
+  keyInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') el('enter').click();
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) {
+    b.addEventListener('click', function () {
+      filter = b.dataset.f;
+      Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (x) {
+        x.setAttribute('aria-pressed', String(x === b));
+      });
+      render();
+    });
+  });
+
+  el('refresh').addEventListener('click', function () { load().then(function (ok) { if (ok) toast('已刷新'); }); });
+
+  el('csv').addEventListener('click', function () {
+    /* 走服务端导（带 BOM，Excel 打开中文不乱码） */
+    location.href = API + '?key=' + encodeURIComponent(key) + '&format=csv';
+  });
+
+  el('copy').addEventListener('click', function () {
+    var yes = rows.filter(function (r) { return r.attend === 'yes'; });
+    var lines = yes.map(function (r) {
+      return [r.code ? pad2(r.code) : '转发', r.name, (r.party || 1) + '位',
+        r.allergy ? '忌口:' + r.allergy : ''].filter(Boolean).join('  ');
+    });
+    var text = '出席 ' + yes.length + ' 人 / 共 ' +
+      yes.reduce(function (n, r) { return n + (r.party || 1); }, 0) + ' 位\n' + lines.join('\n');
+    var done = function () { toast('已复制出席名单（' + yes.length + ' 条）'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { window.prompt('手动复制：', text); });
+    } else {
+      window.prompt('手动复制：', text);
+    }
+  });
+
+  el('forget').addEventListener('click', function (e) {
+    e.preventDefault();
+    try { localStorage.removeItem(STORE); } catch (err) {}
+    key = '';
+    keyInput.value = '';
+    showGate('口令已从本机清除。再粘贴一次即可继续查看。');
+    toast('已清除');
+  });
+
+  /* ---------------- 启动：本机记过口令就直接进 ---------------- */
+  try { key = localStorage.getItem(STORE) || ''; } catch (e) {}
+  if (key) {
+    keyInput.value = key;
+    load();
+  } else {
+    showGate(gateMsg.innerHTML);
+  }
+})();
+</script>
+</body>
+</html>

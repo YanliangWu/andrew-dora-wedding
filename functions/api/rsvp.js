@@ -158,7 +158,10 @@ export async function onRequestPost(context) {
 
   const code = str(body.code).trim();
   const attend = str(body.attend).trim();
-  const guest = str(body.name).trim();
+  /* name 来自主页那张表单里「你的名字」输入框：专属链接会预填名单上的名字，
+     宾客可以改（写英文名、替家人报名、转发链接后自己填）→ 以这里收到的为准。
+     slice 只是防滥用，前端 maxlength=40，这里留点余量。 */
+  const guest = str(body.name).trim().slice(0, 60);
   const allergy = str(body.allergy).trim().slice(0, 200);
   let party = parseInt(body.party, 10);
   if (!Number.isFinite(party) || party < 0) party = 0;
@@ -182,7 +185,7 @@ export async function onRequestPost(context) {
   fields[F.plus] = yes ? Math.max(0, party - 1) : 0;
   fields[F.repliedAt] = Date.now();          // bitable datetime 收毫秒时间戳
   if (guest) fields[F.guest] = guest;
-  // 过敏只在有内容时写：宾客二次提交留空不该把已经收到的忌口抹掉
+  // 名字/过敏都只在有内容时写：宾客二次提交留空不该把已经收到的抹掉
   if (allergy) fields[F.allergy] = allergy;
 
   try {

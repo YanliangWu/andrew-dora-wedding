@@ -552,6 +552,14 @@ body.lang-en .thanks { letter-spacing: 1.5px; }
 #rsvp-sheet textarea::placeholder,
 #rsvp-sheet input::placeholder { color: #b6a992; letter-spacing: 0; }
 
+/* 名字框：底子沿用上面的 input[type="text"]，但编号框那套"居中 + 逐位字距"
+   是给数字看的，中文名字摆进去会散架，所以这里改回左对齐常规字距。 */
+#rsvp-sheet #rsvp-name {
+  text-align: left;
+  letter-spacing: 0;
+  font-size: 15.5px;
+}
+
 #rsvp-sheet .sheet-send {
   width: 100%;
   margin-top: 4px;

@@ -104,10 +104,11 @@
 
   </main>
 
-  <!-- 回复出席面板：在主页里直接收 3 题，不跳转。
+  <!-- 回复出席面板：在主页里直接收「名字 + 3 题」，不跳转。
        提交 → 同域 /api/rsvp（Cloudflare Pages Function）→ 飞书「RSVP 管理」表
        （base KQgabWJAIaV7xKsf6wAcz0frnnc / table tblZNTDaA9g2xpHV）。
-       身份来自专属链接的 ?c=邀请编号；?n=名字 只用来问候，不参与校验。
+       身份来自专属链接的 ?c=邀请编号；?n=名字 预填进「你的名字」输入框，
+       宾客可以改（链接被转发、或名单里显示名为空时，就靠他们自己填）。
        ⚠️ GitHub Pages 那份没有 Function，提交会失败 —— 面板会当场退回飞书表单
        （data-fallback），所以两个站都能用，只是 GH 站少一步直达。
        ⚠️ 文案改这里要同步 en/index.html；逻辑共用 rsvp.js，不在这里写死。
@@ -118,6 +119,7 @@
        data-hi="你好，{name} ♡"
        data-hi-anon="谢谢你的回复 ♡"
        data-need-attend="先告诉我们你来不来哦"
+       data-need-name="请写下你的名字 ♡"
        data-need-code="请输入你的邀请编号（请柬链接里带的那个两位数字）"
        data-ok-yes="收到啦，我们等你 ♡"
        data-ok-yes-sub="已记录：{party} 位"
@@ -134,6 +136,14 @@
 
       <form id="rsvp-form" novalidate>
         <p class="sheet-hi" id="rsvp-hi"></p>
+
+        <!-- 名字排第一题：专属链接会预填好，宾客只是"看一眼/顺手改"；
+             链接被转发出去（没有 ?n=）时，这里就是他们唯一的报名入口。 -->
+        <div class="q">
+          <p class="q-label" id="rsvp-q0">你的名字</p>
+          <input id="rsvp-name" type="text" maxlength="40" autocomplete="name"
+                 aria-labelledby="rsvp-q0" placeholder="写下你的名字">
+        </div>
 
         <div class="q" role="radiogroup" aria-labelledby="rsvp-q1">
           <p class="q-label" id="rsvp-q1">你会来吗？</p>

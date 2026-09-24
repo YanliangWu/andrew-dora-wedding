@@ -1,4 +1,4 @@
-/* 主页内嵌的「回复出席」面板 —— 3 题（来不来 / 几位 / 过敏忌口），不跳转。
+/* 主页内嵌的「回复出席」面板 —— 名字 + 3 题（来不来 / 几位 / 过敏忌口），不跳转。
  *
  * 数据流：本页 fetch → 同域 <data-api> → Cloudflare Pages Function
  *         (functions/api/rsvp.js) → 飞书「RSVP 管理」表。
@@ -32,6 +32,7 @@
   var partyWrap = document.getElementById('rsvp-party-wrap');
   var partyOut = document.getElementById('rsvp-party');
   var allergy = document.getElementById('rsvp-allergy');
+  var nameInput = document.getElementById('rsvp-name');
   var codeWrap = document.getElementById('rsvp-code-wrap');
   var codeInput = document.getElementById('rsvp-code');
   if (!form || !sendBtn) return;
@@ -43,13 +44,25 @@
 
   /* ---------------------------------------------------------- 身份
      专属链接形如 /?c=01&n=张三：c 是邀请编号（真正提交上去的键），
-     n 只用于问候语。两者都不做校验 —— 这是婚礼请柬，不是登录系统。 */
+     n 预填进「你的名字」输入框 —— 但只是**预填**，宾客可以改（改名、写英文名、
+     替家人报名都会发生），提交时以输入框里的值为准。两者都不做校验 ——
+     这是婚礼请柬，不是登录系统。 */
   var qs = new URLSearchParams(location.search);
   var code = (qs.get('c') || '').trim();
   var guest = (qs.get('n') || '').trim();
 
   if (!code) codeWrap.hidden = false;       // 链接被转发/裸域名打开 → 让宾客自己填
-  hi.textContent = guest ? (D.hi || '').replace('{name}', guest) : (D.hiAnon || '');
+  if (guest) nameInput.value = guest;       // 预填，不是只读
+
+  /* 问候语跟着名字框走，而不是钉死在链接参数上：宾客把名字改掉以后（或者裸链接
+     自己打字），顶上那行也要跟着变 —— 否则会出现"欢迎张伟 / 记录成李娜"的错位。
+     没有名字时退回匿名版文案。 */
+  function syncHi() {
+    var who = nameInput.value.trim();
+    hi.textContent = who ? (D.hi || '').replace('{name}', who) : (D.hiAnon || '');
+  }
+  nameInput.addEventListener('input', syncHi);
+  syncHi();                                 // 首次渲染：预填的名字 / 匿名版
 
   /* ---------------------------------------------------------- 人数步进 */
   function party() { return parseInt(partyOut.textContent, 10) || 1; }
@@ -130,7 +143,10 @@
     partyWrap.hidden = saved.attend !== 'yes';
     setParty(saved.party || 1);
     if (saved.allergy) allergy.value = saved.allergy;
+    // 名字框是空的时候才回填：链接带的 ?n= 优先，其次上次自己写的
+    if (!nameInput.value.trim() && saved.name) nameInput.value = saved.name;
     if (!code && saved.code) codeInput.value = saved.code;
+    syncHi();
   }
 
   /* ---------------------------------------------------------- 提交 */
@@ -160,6 +176,14 @@
     e.preventDefault();
     if (sending) return;
 
+    // 按题目在屏幕上的顺序校验：名字 → 来不来 → 邀请编号
+    var finalName = nameInput.value.trim();
+    if (!finalName) {
+      note.textContent = D.needName || '';
+      nameInput.focus();
+      return;
+    }
+
     var attend = picked();
     if (!attend) { note.textContent = D.needAttend || ''; return; }
 
@@ -172,7 +196,7 @@
 
     var payload = {
       code: finalCode,
-      name: guest,
+      name: finalName,
       attend: attend,
       party: attend === 'yes' ? party() : 0,
       allergy: allergy.value.trim()

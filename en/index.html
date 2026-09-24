@@ -104,10 +104,11 @@
 
   </main>
 
-  <!-- RSVP sheet: collects three questions on the main page, no redirect.
+  <!-- RSVP sheet: collects name + three questions on the main page, no redirect.
        Submits to same-origin /api/rsvp (Cloudflare Pages Function) which writes
        into the Feishu "RSVP 管理" table. Identity comes from ?c=<invite code>
-       in the personal link; ?n=<name> is only used for the greeting.
+       in the personal link; ?n=<name> is prefilled into the "Your name" field
+       and can be edited (a forwarded link has no ?n=, so guests type it).
        ⚠️ GitHub Pages has no Functions, so submits fail there — the sheet falls
        back to the Feishu form (data-fallback) on the spot.
        ⚠️ Keep the copy in sync with index.html; the logic lives in rsvp.js. -->
@@ -117,6 +118,7 @@
        data-hi="Hi {name} ♡"
        data-hi-anon="Thanks for replying ♡"
        data-need-attend="Please pick one first"
+       data-need-name="Please write your name ♡"
        data-need-code="Please enter your invitation code (the two digits in your link)"
        data-ok-yes="Wonderful — see you there ♡"
        data-ok-yes-sub="Recorded: {party} guest(s)"
@@ -133,6 +135,14 @@
 
       <form id="rsvp-form" novalidate>
         <p class="sheet-hi" id="rsvp-hi"></p>
+
+        <!-- Name comes first: the personal link prefills it, and it's the only
+             way we can identify a guest opening a forwarded link (no ?n=). -->
+        <div class="q">
+          <p class="q-label" id="rsvp-q0">Your name</p>
+          <input id="rsvp-name" type="text" maxlength="40" autocomplete="name"
+                 aria-labelledby="rsvp-q0" placeholder="Write your name">
+        </div>
 
         <div class="q" role="radiogroup" aria-labelledby="rsvp-q1">
           <p class="q-label" id="rsvp-q1">Will you be joining us?</p>
